@@ -2,6 +2,10 @@ node_modules
 .next
 dist
 .turbo
+.pnpm-store
 .env
 *.db
 *.db-journal
+/generated
+**/generated
+.DS_Store

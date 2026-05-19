@@ -1,0 +1,23 @@
+{
+  "name": "@realworld2/database",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/prisma.ts",
+  "scripts": {
+    "p:generate": "prisma generate",
+    "p:migrate": "prisma migrate dev",
+    "p:validate": "prisma validate",
+    "p:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "better-sqlite3": "^12.10.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0",
+    "typescript": "^6.0.3"
+  }
+}
