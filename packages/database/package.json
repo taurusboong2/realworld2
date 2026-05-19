@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "./src/prisma.ts",
+  "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
   "scripts": {
     "p:generate": "prisma generate",
     "p:migrate": "prisma migrate dev",
