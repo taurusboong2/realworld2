@@ -1,8 +1,67 @@
-generator client {
-  provider = "prisma-client"
-  output   = "../generated"
-}
-
 datasource db {
   provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. 사용자 모델 (Authentication & Profile)
+model User {
+  id       Int       @id @default(autoincrement())
+  email    String    @unique
+  username String    @unique
+  password String
+  bio      String?
+  image    String?
+  articles Article[] @relation("UserArticles")
+  comments Comment[]
+
+  // 팔로우 관계 (Self-relation)
+  followedBy User[] @relation("UserFollows")
+  following  User[] @relation("UserFollows")
+
+  // 좋아요(Favorites) 관계
+  favorites Article[] @relation("UserFavorites")
+}
+
+// 2. 게시글 모델 (Articles)
+model Article {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique // URL용 고유 이름
+  title       String
+  description String
+  body        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 관계 설정
+  author   User      @relation("UserArticles", fields: [authorId], references: [id])
+  authorId Int
+  comments Comment[]
+  tagList  Tag[] // N:M 관계
+
+  // 좋아요를 누른 사용자들
+  favoritedBy User[] @relation("UserFavorites")
+}
+
+// 3. 댓글 모델 (Comments)
+model Comment {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  body      String
+
+  // 관계 설정
+  author    User    @relation(fields: [authorId], references: [id])
+  authorId  Int
+  article   Article @relation(fields: [articleId], references: [id])
+  articleId Int
+}
+
+// 4. 태그 모델 (Tags)
+model Tag {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  articles Article[] // N:M 관계
 }
