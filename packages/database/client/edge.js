@@ -39,11 +39,11 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 7.6.0
+ * Prisma Client JS version: 7.7.0
  * Query Engine version: 75cbdc1eb7150937890ad5465d861175c6624711
  */
 Prisma.prismaVersion = {
-  client: "7.6.0",
+  client: "7.7.0",
   engine: "75cbdc1eb7150937890ad5465d861175c6624711"
 }
 
@@ -145,7 +145,7 @@ exports.Prisma.ModelName = {
  */
 const config = {
   "previewFeatures": [],
-  "clientVersion": "7.6.0",
+  "clientVersion": "7.7.0",
   "engineVersion": "75cbdc1eb7150937890ad5465d861175c6624711",
   "activeProvider": "sqlite",
   "inlineSchema": "datasource db {\n  provider = \"sqlite\"\n}\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../client\"\n}\n\n// 1. 사용자 모델 (Authentication & Profile)\nmodel User {\n  id       Int       @id @default(autoincrement())\n  email    String    @unique\n  username String    @unique\n  password String\n  bio      String?\n  image    String?\n  articles Article[] @relation(\"UserArticles\")\n  comments Comment[]\n\n  // 팔로우 관계 (Self-relation)\n  followedBy User[] @relation(\"UserFollows\")\n  following  User[] @relation(\"UserFollows\")\n\n  // 좋아요(Favorites) 관계\n  favorites Article[] @relation(\"UserFavorites\")\n}\n\n// 2. 게시글 모델 (Articles)\nmodel Article {\n  id          Int      @id @default(autoincrement())\n  slug        String   @unique // URL용 고유 이름\n  title       String\n  description String\n  body        String\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  // 관계 설정\n  author   User      @relation(\"UserArticles\", fields: [authorId], references: [id])\n  authorId Int\n  comments Comment[]\n  tagList  Tag[] // N:M 관계\n\n  // 좋아요를 누른 사용자들\n  favoritedBy User[] @relation(\"UserFavorites\")\n}\n\n// 3. 댓글 모델 (Comments)\nmodel Comment {\n  id        Int      @id @default(autoincrement())\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  body      String\n\n  // 관계 설정\n  author    User    @relation(fields: [authorId], references: [id])\n  authorId  Int\n  article   Article @relation(fields: [articleId], references: [id])\n  articleId Int\n}\n\n// 4. 태그 모델 (Tags)\nmodel Tag {\n  id       Int       @id @default(autoincrement())\n  name     String    @unique\n  articles Article[] // N:M 관계\n}\n"
