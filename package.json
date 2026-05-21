@@ -6,10 +6,10 @@
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "p:generate": "corepack pnpm --filter @realworld2/database p:generate",
-        "p:migrate": "corepack pnpm --filter @realworld2/database p:migrate",
-        "p:validate": "corepack pnpm --filter @realworld2/database p:validate",
-        "p:studio": "corepack pnpm --filter @realworld2/database p:studio"
+        "p:generate": "corepack pnpm --filter @repo/database exec prisma generate",
+        "p:migrate": "corepack pnpm --filter @repo/database exec prisma migrate dev",
+        "p:validate": "corepack pnpm --filter @repo/database exec prisma validate",
+        "p:studio": "corepack pnpm --filter @repo/database exec prisma studio"
     },
     "keywords": [],
     "author": "",

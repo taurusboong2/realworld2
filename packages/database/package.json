@@ -1,26 +1,18 @@
 {
-  "name": "@realworld2/database",
+  "name": "@repo/database",
   "version": "1.0.0",
-  "private": true,
-  "type": "module",
+  "description": "",
   "main": "./index.ts",
-  "exports": {
-    ".": "./index.ts"
-  },
+  "types": "./index.ts",
   "scripts": {
-    "p:generate": "prisma generate",
-    "p:migrate": "prisma migrate dev",
-    "p:validate": "prisma validate",
-    "p:studio": "prisma studio"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.32.1",
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "better-sqlite3": "^12.10.0",
-    "dotenv": "^17.4.2"
-  },
-  "devDependencies": {
-    "prisma": "^7.8.0",
-    "typescript": "^6.0.3"
+    "@prisma/client": "^7.6.0",
+    "prisma": "^7.6.0"
   }
 }
