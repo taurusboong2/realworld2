@@ -1,4 +1,18 @@
-import { PrismaClient } from './client';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaClient } from '@prisma/client';
 
-export * from './client'; // Prisma가 생성한 타입들을 모두 export
-export const db = new PrismaClient(); // 실제 DB 인스턴스 export
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const dbPath = path.resolve(__dirname, 'dev.db');
+process.env.DATABASE_URL = `file:${dbPath}`;
+
+const adapter = new PrismaBetterSqlite3({
+  url: `file:${dbPath}`,
+});
+
+export const db = new PrismaClient({ adapter } as any);
+
+export * from '@prisma/client';

@@ -4,7 +4,6 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../client"
 }
 
 // 1. 사용자 모델 (Authentication & Profile)
@@ -34,7 +33,7 @@ model Article {
   description String
   body        String
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @updatedAt @default(now())
 
   // 관계 설정
   author   User      @relation("UserArticles", fields: [authorId], references: [id])
@@ -50,7 +49,7 @@ model Article {
 model Comment {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @default(now())
   body      String
 
   // 관계 설정
