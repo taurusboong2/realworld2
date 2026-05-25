@@ -11,7 +11,8 @@
         "p:validate": "corepack pnpm --filter @repo/database exec prisma validate",
         "p:studio": "corepack pnpm --filter @repo/database exec prisma studio",
         "p:push": "corepack pnpm --filter @repo/database exec prisma db push",
-        "p:seed": "corepack pnpm --filter @repo/database exec tsx seed.ts"
+        "p:seed": "corepack pnpm --filter @repo/database exec tsx seed.ts",
+        "nest:dev": "turbo run dev --filter=@repo/api-nest"
     },
     "keywords": [],
     "author": "",
