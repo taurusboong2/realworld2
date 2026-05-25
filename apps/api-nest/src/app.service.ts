@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '@repo/database'; // 여기서 에러가 안 나야 합니다.
+import { db } from '@repo/database'; // packages/database에서 가져옵니다.
 
 @Injectable()
 export class AppService {
   async getUsers() {
-    return await db.user.findMany(); // DB에서 유저 목록을 가져오는 로직입니다.
+    return await db.user.findMany(); // Prisma를 통해 유저 목록을 조회합니다.
   }
 }
