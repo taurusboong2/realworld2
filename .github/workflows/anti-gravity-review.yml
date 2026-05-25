@@ -1,0 +1,51 @@
+name: "Gemini AI Code Review"
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    if: >
+      github.actor_type != 'Bot'
+      &&
+      contains(
+        github.event.comment.body || github.event.review.body,
+        '@review'
+      )
+      &&
+      (
+        github.event.pull_request ||
+        github.event.issue.pull_request
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read review instructions
+        id: instructions
+        run: |
+          echo "INSTRUCTIONS<<EOF" >> "$GITHUB_OUTPUT"
+          cat .github/gemini-review-instructions.md >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Run Gemini Review
+        uses: petarzarkov/gemini-code-review-action@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PROMPT: ${{ steps.instructions.outputs.INSTRUCTIONS }}
+        with:
+          model: "gemini-3.1-flash-lite-preview"
+          exclude: "package-lock.json, pnpm-lock.yaml, *.md, *.json, .gitignore, public/**, vendor/**"
