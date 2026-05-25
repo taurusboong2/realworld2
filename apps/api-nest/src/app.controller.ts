@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 
-@Controller('users') // 호출 주소를 /users로 변경합니다.
+@Controller('users')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 

@@ -17,5 +17,8 @@
     "@prisma/client": "^7.7.0",
     "better-sqlite3": "^12.9.0",
     "prisma": "^7.7.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
   }
 }
