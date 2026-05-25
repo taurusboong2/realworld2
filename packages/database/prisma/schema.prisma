@@ -49,7 +49,7 @@ model Article {
 model Comment {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @default(now())
   body      String
 
   // 관계 설정
