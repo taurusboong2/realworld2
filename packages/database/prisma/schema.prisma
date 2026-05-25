@@ -4,7 +4,6 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../client"
 }
 
 // 1. 사용자 모델 (Authentication & Profile)
