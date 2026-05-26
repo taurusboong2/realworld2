@@ -4,28 +4,22 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
-  MaxLength,
   ValidateNested,
 } from 'class-validator';
 
-export class AddUserDetailsDto {
-  @IsString()
+export class LoginUserDetailsDto {
+  @IsEmail()
   @IsNotEmpty()
-  @MaxLength(30)
-  username: string;
+  email: string;
 
   @IsString()
   @IsNotEmpty()
   password: string;
-
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
 }
 
-export class AddUserDto {
+export class LoginUserDto {
   @IsDefined()
   @ValidateNested()
-  @Type(() => AddUserDetailsDto)
-  user: AddUserDetailsDto;
+  @Type(() => LoginUserDetailsDto)
+  user: LoginUserDetailsDto;
 }
