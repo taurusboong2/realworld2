@@ -73,10 +73,12 @@ corepack pnpm --filter @repo/api-nest dev
 
 ```json
 {
-  "title": "새로운 게시글 제목",
-  "description": "게시글 설명",
-  "body": "게시글의 상세 내용입니다.",
-  "tagList": ["react", "nest"]
+  "article": {
+    "title": "새로운 게시글 제목",
+    "description": "게시글 설명",
+    "body": "게시글의 상세 내용입니다.",
+    "tagList": ["react", "nest"]
+  }
 }
 ```
 
@@ -87,9 +89,11 @@ corepack pnpm --filter @repo/api-nest dev
 
 ```json
 {
-  "title": "수정된 게시글 제목",
-  "description": "수정된 설명",
-  "body": "내용을 수정했습니다."
+  "article": {
+    "title": "수정된 게시글 제목",
+    "description": "수정된 설명",
+    "body": "내용을 수정했습니다."
+  }
 }
 ```
 

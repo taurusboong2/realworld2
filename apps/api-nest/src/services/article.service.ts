@@ -8,13 +8,49 @@ import { prisma } from '../clients/prisma.client';
 import { CreateArticleDto } from '../dto/article/create-article.dto';
 import { UpdateArticleDto } from '../dto/article/update-article.dto';
 
+type ArticleRecord = {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  body: string;
+  createdAt: Date;
+  updatedAt: Date;
+  authorId: number;
+  author: {
+    username: string;
+    bio: string | null;
+    image: string | null;
+  };
+  tagList: {
+    name: string;
+  }[];
+};
+
+type ArticleResponse = Omit<ArticleRecord, 'tagList' | 'author'> & {
+  tagList: string[];
+  favorited: boolean;
+  favoritesCount: number;
+  author: ArticleRecord['author'] & {
+    following: boolean;
+  };
+};
+
 @Injectable()
 export class ArticleService {
   async getArticles() {
-    return await prisma.article.findMany({
-      include: this.articleInclude(),
-      orderBy: { createdAt: 'desc' },
-    });
+    const [articles, articlesCount] = await Promise.all([
+      prisma.article.findMany({
+        include: this.articleInclude(),
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.article.count(),
+    ]);
+
+    return {
+      articles: articles.map((article) => this.formatArticle(article)),
+      articlesCount,
+    };
   }
 
   async getArticleBySlug(slug: string) {
@@ -27,53 +63,80 @@ export class ArticleService {
       throw new NotFoundException('Article not found');
     }
 
-    return article;
+    return {
+      article: this.formatArticle(article),
+    };
   }
 
   async createArticle(dto: CreateArticleDto, authorIdParam: string) {
+    const { article: articleDto } = dto;
     const authorId = this.parseAuthorId(authorIdParam);
-    const slug = this.createUniqueSlug(dto.title);
+    const slug = this.createUniqueSlug(articleDto.title);
 
     try {
-      return await prisma.article.create({
+      const article = await prisma.article.create({
         data: {
-          title: dto.title,
-          description: dto.description,
-          body: dto.body,
+          title: articleDto.title,
+          description: articleDto.description,
+          body: articleDto.body,
           slug,
           author: {
             connect: { id: authorId },
           },
           tagList: {
-            connectOrCreate: this.toTagConnectOrCreate(dto.tagList),
+            connectOrCreate: this.toTagConnectOrCreate(articleDto.tagList),
           },
         },
         include: this.articleInclude(),
       });
+
+      return {
+        article: this.formatArticle(article),
+      };
     } catch (error) {
       this.handlePrismaError(error);
     }
   }
 
   async updateArticle(slug: string, dto: UpdateArticleDto) {
-    const article = await this.getArticleBySlug(slug);
+    const { article: updateDto } = dto;
+    const article = await prisma.article.findUnique({
+      where: { slug },
+      include: this.articleInclude(),
+    });
 
-    return await prisma.article.update({
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    const updated = await prisma.article.update({
       where: { id: article.id },
       data: {
-        title: dto.title ?? article.title,
-        description: dto.description ?? article.description,
-        body: dto.body ?? article.body,
-        slug: dto.title ? this.createUniqueSlug(dto.title) : article.slug,
+        title: updateDto.title ?? article.title,
+        description: updateDto.description ?? article.description,
+        body: updateDto.body ?? article.body,
+        slug: updateDto.title
+          ? this.createUniqueSlug(updateDto.title)
+          : article.slug,
       },
       include: this.articleInclude(),
     });
+
+    return {
+      article: this.formatArticle(updated),
+    };
   }
 
   async deleteArticle(slug: string) {
-    const article = await this.getArticleBySlug(slug);
+    const article = await prisma.article.findUnique({
+      where: { slug },
+    });
 
-    return await prisma.article.delete({
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    await prisma.article.delete({
       where: { id: article.id },
     });
   }
@@ -89,6 +152,21 @@ export class ArticleService {
       },
       tagList: true,
     } as const;
+  }
+
+  private formatArticle(article: ArticleRecord): ArticleResponse {
+    const { tagList, author, ...articleFields } = article;
+
+    return {
+      ...articleFields,
+      tagList: tagList.map((tag) => tag.name),
+      favorited: false,
+      favoritesCount: 0,
+      author: {
+        ...author,
+        following: false,
+      },
+    };
   }
 
   private parseAuthorId(authorId: string) {

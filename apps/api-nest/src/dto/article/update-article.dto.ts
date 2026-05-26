@@ -1,6 +1,12 @@
-import { IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsDefined,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
-export class UpdateArticleDto {
+export class UpdateArticleDetailsDto {
   @IsString()
   @IsOptional()
   title?: string;
@@ -12,4 +18,11 @@ export class UpdateArticleDto {
   @IsString()
   @IsOptional()
   body?: string;
+}
+
+export class UpdateArticleDto {
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => UpdateArticleDetailsDto)
+  article: UpdateArticleDetailsDto;
 }
