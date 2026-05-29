@@ -1,12 +1,20 @@
 ---
 name: api-nest-conventions
-description: Use when modifying files under apps/api-nest. Defines this repository's NestJS API architecture, naming conventions, DTO/controller/service rules, Prisma usage, validation, response, and testing rules.
+description: Use when modifying files under apps/api-nest. Defines this repository's NestJS API architecture, naming conventions, DTO/controller/service rules, Prisma usage, validation, response, auth, and testing rules.
 user-invocable: false
 ---
 
 # api-nest Conventions
 
 Use this guide before changing `apps/api-nest/**`.
+
+## Project Boundary
+
+This repository's backend target is `apps/api-nest`.
+
+- Do not add or maintain Hono backend code for this project.
+- Do not copy Hono routes, handlers, middleware, or app bootstrap patterns into Nest files.
+- When following `all-commits.patch`, translate backend intent into this Nest app's current structure.
 
 ## Current Architecture
 
@@ -33,7 +41,8 @@ Important rule: do not add a second Prisma schema, generated client, or SQLite D
 ## Migration Policy
 
 - Keep small edits close to the existing file structure.
-- For new domain features, prefer feature-first structure under `src/modules/<feature>`.
+- For the current in-progress migration, keep the existing layer folders unless the user explicitly asks for the larger feature-first refactor.
+- If the project later moves to feature-first modules, do it in one deliberate refactor, not opportunistically during unrelated work.
 - Do not perform broad renames or file moves unless the user asks for that refactor.
 - Preserve the current `default` spelling. Do not reintroduce the old `detault` typo from earlier history.
 
@@ -44,6 +53,8 @@ Important rule: do not add a second Prisma schema, generated client, or SQLite D
 - Controllers: `users.controller.ts`.
 - Services: `users.service.ts`.
 - Modules: `users.module.ts`.
+- Guards: `auth.guard.ts`, `optional-auth.guard.ts`.
+- Shared types under `src/types`: short domain names such as `auth.ts`, `article.ts`.
 - Class names: `CreateUserDto`, `UsersController`, `UsersService`, `UsersModule`.
 
 Existing names such as `AddUserDto` may remain when making small changes. For new APIs, prefer the names above.
@@ -54,6 +65,9 @@ Existing names such as `AddUserDto` may remain when making small changes. For ne
 - Use DTOs for `@Body()`, and explicit types for params/query.
 - Do not put business logic in controllers.
 - Do not return passwords, tokens, or raw DB errors.
+- Prefer explicit route paths on new handlers once a controller has mixed nested routes, for example `@Get('/')`, `@Post('/')`, `@Get('/:slug')`.
+- If an existing controller uses `@Get()` style routes, do not rename route decorators unless it is part of the requested change.
+- Authenticated routes should get the current user from a guard-populated request object, not from `userId` query parameters.
 
 ## Service Rules
 
@@ -61,6 +75,7 @@ Existing names such as `AddUserDto` may remain when making small changes. For ne
 - Prisma access belongs in services or repositories, not controllers.
 - Convert Prisma errors to Nest HTTP exceptions where practical.
 - Use transactions when a write flow spans multiple related records.
+- Avoid `formatXxx` helpers inside services once response shape grows. Prefer response DTOs or presenters when responses need stable RealWorld-style envelopes.
 
 ## DTO And Validation
 
@@ -68,6 +83,8 @@ Existing names such as `AddUserDto` may remain when making small changes. For ne
 - Use `class-validator`.
 - `main.ts` uses global `ValidationPipe`; keep route DTOs compatible with it.
 - Add response DTOs or presenters once response shape matters.
+- Use `unknown` plus narrowing for unsafe inputs. Do not use `any` or `as any` to bypass type errors.
+- Keep DTO classes focused on one request/response shape.
 
 ## Prisma Rules
 
@@ -111,6 +128,14 @@ Example direction:
 ```
 
 Current early endpoints may still return raw Prisma models, but password fields should be removed before auth work continues.
+
+## Auth And Cookies
+
+- Auth guards should live in `src/guards`.
+- Shared request auth types should live in `src/types/auth.ts`.
+- Cookie parsing utilities should live in `src/utils/cookie.ts` when needed.
+- Required auth routes should throw `UnauthorizedException` when no valid user is present.
+- Optional auth routes should tolerate missing or invalid credentials and continue as anonymous.
 
 ## Testing
 

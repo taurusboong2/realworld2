@@ -1,7 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from './client/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,4 +15,4 @@ const adapter = new PrismaBetterSqlite3({
 
 export const db = new PrismaClient({ adapter } as any);
 
-export * from '@prisma/client';
+export * from './client/index.js';
