@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Put,
@@ -17,30 +19,71 @@ export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
   @Get()
-  getArticles() {
-    return this.articleService.getArticles();
+  getArticles(
+    @Query() query: { tag?: string; author?: string; favorited?: string },
+    @Query('userId') userId?: string,
+  ) {
+    return this.articleService.getArticles(
+      query,
+      userId ? parseInt(userId, 10) : undefined,
+    );
+  }
+
+  @Get('feed')
+  getFeed(@Query('userId') userId: string) {
+    return this.articleService.getFeed(parseInt(userId, 10));
   }
 
   @Get(':slug')
-  getArticleBySlug(@Param('slug') slug: string) {
-    return this.articleService.getArticleBySlug(slug);
+  getArticleBySlug(
+    @Param('slug') slug: string,
+    @Query('userId') userId?: string,
+  ) {
+    return this.articleService.getArticleBySlug(
+      slug,
+      userId ? parseInt(userId, 10) : undefined,
+    );
   }
 
   @Post()
   createArticle(
     @Body() dto: CreateArticleDto,
-    @Query('authorId') authorId: string,
+    @Query('userId') userId: string,
   ) {
-    return this.articleService.createArticle(dto, authorId);
+    return this.articleService.createArticle(dto, parseInt(userId, 10));
   }
 
   @Put(':slug')
-  updateArticle(@Param('slug') slug: string, @Body() dto: UpdateArticleDto) {
-    return this.articleService.updateArticle(slug, dto);
+  updateArticle(
+    @Param('slug') slug: string,
+    @Body() dto: UpdateArticleDto,
+    @Query('userId') userId: string,
+  ) {
+    return this.articleService.updateArticle(slug, dto, parseInt(userId, 10));
   }
 
   @Delete(':slug')
-  deleteArticle(@Param('slug') slug: string) {
-    return this.articleService.deleteArticle(slug);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteArticle(
+    @Param('slug') slug: string,
+    @Query('userId') userId: string,
+  ) {
+    return this.articleService.deleteArticle(slug, parseInt(userId, 10));
+  }
+
+  @Post(':slug/favorite')
+  favoriteArticle(
+    @Param('slug') slug: string,
+    @Query('userId') userId: string,
+  ) {
+    return this.articleService.favoriteArticle(slug, parseInt(userId, 10));
+  }
+
+  @Delete(':slug/favorite')
+  unfavoriteArticle(
+    @Param('slug') slug: string,
+    @Query('userId') userId: string,
+  ) {
+    return this.articleService.unfavoriteArticle(slug, parseInt(userId, 10));
   }
 }

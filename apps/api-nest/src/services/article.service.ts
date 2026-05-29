@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -21,42 +22,105 @@ type ArticleRecord = {
     username: string;
     bio: string | null;
     image: string | null;
+    followedBy?: { id: number }[];
   };
   tagList: {
     name: string;
   }[];
+  favoritedBy?: { id: number }[];
+  _count?: {
+    favoritedBy: number;
+  };
 };
 
-type ArticleResponse = Omit<ArticleRecord, 'tagList' | 'author'> & {
+type ArticleResponse = Omit<
+  ArticleRecord,
+  'tagList' | 'author' | 'favoritedBy' | '_count'
+> & {
   tagList: string[];
   favorited: boolean;
   favoritesCount: number;
-  author: ArticleRecord['author'] & {
+  author: Pick<ArticleRecord['author'], 'username' | 'bio' | 'image'> & {
     following: boolean;
   };
 };
 
 @Injectable()
 export class ArticleService {
-  async getArticles() {
+  async getArticles(
+    query: { tag?: string; author?: string; favorited?: string } = {},
+    userId?: number,
+  ) {
+    const where: Prisma.ArticleWhereInput = {};
+
+    if (query.tag) {
+      where.tagList = { some: { name: query.tag } };
+    }
+
+    if (query.author) {
+      where.author = { username: query.author };
+    }
+
+    if (query.favorited) {
+      where.favoritedBy = { some: { username: query.favorited } };
+    }
+
     const [articles, articlesCount] = await Promise.all([
       prisma.article.findMany({
-        include: this.articleInclude(),
+        where,
+        include: this.articleInclude(userId),
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.article.count(),
+      prisma.article.count({ where }),
     ]);
 
     return {
-      articles: articles.map((article) => this.formatArticle(article)),
+      articles: articles.map((article) => this.formatArticle(article, userId)),
       articlesCount,
     };
   }
 
-  async getArticleBySlug(slug: string) {
+  async getFeed(userId: number) {
+    const parsedUserId = this.parseUserId(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: parsedUserId },
+      include: {
+        following: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const followingIds = user.following.map((following) => following.id);
+    const where: Prisma.ArticleWhereInput = {
+      authorId: { in: followingIds },
+    };
+
+    const [articles, articlesCount] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        include: this.articleInclude(parsedUserId),
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.article.count({ where }),
+    ]);
+
+    return {
+      articles: articles.map((article) =>
+        this.formatArticle(article, parsedUserId),
+      ),
+      articlesCount,
+    };
+  }
+
+  async getArticleBySlug(slug: string, userId?: number) {
     const article = await prisma.article.findUnique({
       where: { slug },
-      include: this.articleInclude(),
+      include: this.articleInclude(userId),
     });
 
     if (!article) {
@@ -64,13 +128,13 @@ export class ArticleService {
     }
 
     return {
-      article: this.formatArticle(article),
+      article: this.formatArticle(article, userId),
     };
   }
 
-  async createArticle(dto: CreateArticleDto, authorIdParam: string) {
+  async createArticle(dto: CreateArticleDto, userId: number) {
     const { article: articleDto } = dto;
-    const authorId = this.parseAuthorId(authorIdParam);
+    const authorId = this.parseUserId(userId);
     const slug = this.createUniqueSlug(articleDto.title);
 
     try {
@@ -87,26 +151,82 @@ export class ArticleService {
             connectOrCreate: this.toTagConnectOrCreate(articleDto.tagList),
           },
         },
-        include: this.articleInclude(),
+        include: this.articleInclude(authorId),
       });
 
       return {
-        article: this.formatArticle(article),
+        article: this.formatArticle(article, authorId),
       };
     } catch (error) {
       this.handlePrismaError(error);
     }
   }
 
-  async updateArticle(slug: string, dto: UpdateArticleDto) {
+  async favoriteArticle(slug: string, userId: number) {
+    const parsedUserId = this.parseUserId(userId);
+
+    try {
+      const article = await prisma.article.update({
+        where: { slug },
+        data: {
+          favoritedBy: {
+            connect: { id: parsedUserId },
+          },
+        },
+        include: this.articleInclude(parsedUserId),
+      });
+
+      return {
+        article: this.formatArticle(article, parsedUserId),
+      };
+    } catch (error) {
+      this.handlePrismaError(error);
+    }
+  }
+
+  async unfavoriteArticle(slug: string, userId: number) {
+    const parsedUserId = this.parseUserId(userId);
+
+    try {
+      const article = await prisma.article.update({
+        where: { slug },
+        data: {
+          favoritedBy: {
+            disconnect: { id: parsedUserId },
+          },
+        },
+        include: this.articleInclude(parsedUserId),
+      });
+
+      return {
+        article: this.formatArticle(article, parsedUserId),
+      };
+    } catch (error) {
+      this.handlePrismaError(error);
+    }
+  }
+
+  async updateArticle(slug: string, dto: UpdateArticleDto, userId: number) {
     const { article: updateDto } = dto;
+    const parsedUserId = this.parseUserId(userId);
     const article = await prisma.article.findUnique({
       where: { slug },
-      include: this.articleInclude(),
+      select: {
+        id: true,
+        authorId: true,
+        slug: true,
+        title: true,
+        description: true,
+        body: true,
+      },
     });
 
     if (!article) {
       throw new NotFoundException('Article not found');
+    }
+
+    if (article.authorId !== parsedUserId) {
+      throw new ForbiddenException('You can only update your own articles');
     }
 
     const updated = await prisma.article.update({
@@ -119,21 +239,30 @@ export class ArticleService {
           ? this.createUniqueSlug(updateDto.title)
           : article.slug,
       },
-      include: this.articleInclude(),
+      include: this.articleInclude(parsedUserId),
     });
 
     return {
-      article: this.formatArticle(updated),
+      article: this.formatArticle(updated, parsedUserId),
     };
   }
 
-  async deleteArticle(slug: string) {
+  async deleteArticle(slug: string, userId: number) {
+    const parsedUserId = this.parseUserId(userId);
     const article = await prisma.article.findUnique({
       where: { slug },
+      select: {
+        id: true,
+        authorId: true,
+      },
     });
 
     if (!article) {
       throw new NotFoundException('Article not found');
+    }
+
+    if (article.authorId !== parsedUserId) {
+      throw new ForbiddenException('You can only delete your own articles');
     }
 
     await prisma.article.delete({
@@ -141,42 +270,43 @@ export class ArticleService {
     });
   }
 
-  private articleInclude() {
+  private articleInclude(userId?: number) {
     return {
       author: {
-        select: {
-          username: true,
-          bio: true,
-          image: true,
+        include: {
+          followedBy: userId ? { where: { id: userId } } : false,
         },
       },
       tagList: true,
+      favoritedBy: userId ? { where: { id: userId } } : false,
+      _count: { select: { favoritedBy: true } },
     } as const;
   }
 
-  private formatArticle(article: ArticleRecord): ArticleResponse {
-    const { tagList, author, ...articleFields } = article;
+  private formatArticle(article: ArticleRecord, userId?: number): ArticleResponse {
+    const { tagList, author, favoritedBy = [], _count, ...articleFields } =
+      article;
 
     return {
       ...articleFields,
       tagList: tagList.map((tag) => tag.name),
-      favorited: false,
-      favoritesCount: 0,
+      favorited: userId ? favoritedBy.length > 0 : false,
+      favoritesCount: _count?.favoritedBy ?? 0,
       author: {
-        ...author,
-        following: false,
+        username: author.username,
+        bio: author.bio,
+        image: author.image,
+        following: userId ? (author.followedBy?.length ?? 0) > 0 : false,
       },
     };
   }
 
-  private parseAuthorId(authorId: string) {
-    const parsedAuthorId = Number(authorId);
-
-    if (!Number.isInteger(parsedAuthorId) || parsedAuthorId <= 0) {
-      throw new BadRequestException('authorId query parameter is required');
+  private parseUserId(userId: number) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new BadRequestException('userId query parameter is required');
     }
 
-    return parsedAuthorId;
+    return userId;
   }
 
   private toTagConnectOrCreate(tagList: string[] = []) {
@@ -202,7 +332,7 @@ export class ArticleService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2025'
     ) {
-      throw new NotFoundException('Author not found');
+      throw new NotFoundException('Related resource not found');
     }
 
     throw error;
