@@ -14,6 +14,7 @@ import { Prisma, User } from '@repo/database';
 import { prisma } from '../clients/prisma.client';
 import { AddUserDto } from '../dto/user/add-user.dto';
 import { LoginUserDto } from '../dto/user/login-user.dto';
+import { UpdateUserDto } from '../dto/user/update-user.dto';
 
 const pbkdf2 = promisify(pbkdf2Callback);
 const passwordHashPrefix = 'pbkdf2_sha256';
@@ -75,6 +76,52 @@ export class UserService {
     return {
       user: this.formatUser(user, true),
     };
+  }
+
+  async getCurrentUser(id: number) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      user: this.formatUser(user, true),
+    };
+  }
+
+  async updateUser(id: number, updateDto: UpdateUserDto) {
+    const { user: details } = updateDto;
+
+    try {
+      const user = await prisma.user.update({
+        where: { id },
+        data: {
+          username: details.username,
+          email: details.email,
+          bio: details.bio,
+          image: details.image,
+          password: details.password
+            ? await this.hashPassword(details.password)
+            : undefined,
+        },
+      });
+
+      return {
+        user: this.formatUser(user, true),
+      };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('username or email already exists');
+      }
+
+      throw error;
+    }
   }
 
   private formatUser(user: User, includeToken = false): UserResponse {
