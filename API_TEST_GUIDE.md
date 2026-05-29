@@ -101,3 +101,11 @@ corepack pnpm --filter @repo/api-nest dev
 
 - Method: `DELETE`
 - URL: `http://localhost:3001/api/articles/:slug`
+
+## Tags
+
+### 태그 목록 조회
+
+- Method: `GET`
+- URL: `http://localhost:3001/api/tags`
+- Response 예시: `{ "tags": ["react", "nest"] }`
