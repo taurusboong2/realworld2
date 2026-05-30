@@ -54,7 +54,7 @@ Important rule: do not add a second Prisma schema, generated client, or SQLite D
 - Controllers: `users.controller.ts`.
 - Services: `users.service.ts`.
 - Modules: `users.module.ts`.
-- Guards: `auth.guard.ts`, `optional-auth.guard.ts`.
+- Guard files: lower-case kebab-case plus `.guard.ts`, for example `auth.guard.ts`, `optional-auth.guard.ts`, `cookie-auth.guard.ts`.
 - Shared types under `src/types`: short domain names such as `auth.ts`, `article.ts`.
 - Class names: `CreateUserDto`, `ArticleResponseDto`, `UsersController`, `UsersService`, `UsersModule`.
 
