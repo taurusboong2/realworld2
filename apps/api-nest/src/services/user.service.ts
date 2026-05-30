@@ -12,6 +12,7 @@ import {
 import { promisify } from 'util';
 import { Prisma, User } from '@repo/database';
 import { prisma } from '../clients/prisma.client';
+import { env } from '../constants/env';
 import { AddUserDto } from '../dto/user/add-user.dto';
 import { LoginUserDto } from '../dto/user/login-user.dto';
 import { UpdateUserDto } from '../dto/user/update-user.dto';
@@ -27,8 +28,6 @@ type LoginResult = {
 
 @Injectable()
 export class UserService {
-  private readonly jwtSecret = process.env.JWT_SECRET ?? 'super-secret-key';
-
   async getUsers() {
     const users = await prisma.user.findMany();
     return {
@@ -172,9 +171,9 @@ export class UserService {
       sub: user.id,
       email: user.email,
       username: user.username,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+      exp: Math.floor(Date.now() / 1000) + env.jwtExpiresInSeconds,
     });
-    const signature = createHmac('sha256', this.jwtSecret)
+    const signature = createHmac('sha256', env.jwtSecret)
       .update(`${header}.${payload}`)
       .digest('base64url');
 

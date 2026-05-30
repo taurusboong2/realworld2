@@ -6,14 +6,18 @@ import {
   HttpStatus,
   Post,
   Put,
-  Query,
+  Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { env } from '../constants/env';
 import { AddUserDto } from '../dto/user/add-user.dto';
 import { LoginUserDto } from '../dto/user/login-user.dto';
 import { UpdateUserDto } from '../dto/user/update-user.dto';
+import { AuthGuard } from '../guards/auth.guard';
 import { UserService } from '../services/user.service';
+import type { AuthenticatedRequest } from '../types/auth';
 
 @Controller('/api')
 export class UserController {
@@ -36,14 +40,12 @@ export class UserController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const { user, accessToken } = await this.userService.login(loginDto);
-    const authCookieName =
-      process.env.AUTH_COOKIE_NAME ?? 'realworld_auth_token';
 
-    response.cookie(authCookieName, accessToken, {
+    response.cookie(env.authCookieName, accessToken, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
+      secure: env.nodeEnv === 'production',
+      maxAge: env.jwtExpiresInSeconds * 1000,
       path: '/',
     });
 
@@ -51,15 +53,17 @@ export class UserController {
   }
 
   @Get('user')
-  getCurrentUser(@Query('userId') userId: string) {
-    return this.userService.getCurrentUser(parseInt(userId, 10));
+  @UseGuards(AuthGuard)
+  getCurrentUser(@Req() req: AuthenticatedRequest) {
+    return this.userService.getCurrentUser(req.user.id);
   }
 
   @Put('user')
+  @UseGuards(AuthGuard)
   updateUser(
-    @Query('userId') userId: string,
+    @Req() req: AuthenticatedRequest,
     @Body() updateDto: UpdateUserDto,
   ) {
-    return this.userService.updateUser(parseInt(userId, 10), updateDto);
+    return this.userService.updateUser(req.user.id, updateDto);
   }
 }
