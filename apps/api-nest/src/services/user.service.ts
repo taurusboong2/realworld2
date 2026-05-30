@@ -23,6 +23,11 @@ type UserResponse = Omit<User, 'password'> & {
   token?: string;
 };
 
+type LoginResult = {
+  user: UserResponse;
+  accessToken: string;
+};
+
 @Injectable()
 export class UserService {
   private readonly jwtSecret = process.env.JWT_SECRET ?? 'super-secret-key';
@@ -47,7 +52,7 @@ export class UserService {
       });
 
       return {
-        user: this.formatUser(user, true),
+        user: this.formatUser(user),
       };
     } catch (error) {
       if (
@@ -61,7 +66,7 @@ export class UserService {
     }
   }
 
-  async login(loginDto: LoginUserDto) {
+  async login(loginDto: LoginUserDto): Promise<LoginResult> {
     const { user: details } = loginDto;
     const user = await prisma.user.findUnique({
       where: {
@@ -74,7 +79,8 @@ export class UserService {
     }
 
     return {
-      user: this.formatUser(user, true),
+      user: this.formatUser(user),
+      accessToken: this.generateToken(user),
     };
   }
 
@@ -88,7 +94,7 @@ export class UserService {
     }
 
     return {
-      user: this.formatUser(user, true),
+      user: this.formatUser(user),
     };
   }
 
@@ -110,7 +116,7 @@ export class UserService {
       });
 
       return {
-        user: this.formatUser(user, true),
+        user: this.formatUser(user),
       };
     } catch (error) {
       if (
