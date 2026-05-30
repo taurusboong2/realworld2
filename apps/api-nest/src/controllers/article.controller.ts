@@ -9,81 +9,85 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ArticleService } from '../services/article.service';
 import { CreateArticleDto } from '../dto/article/create-article.dto';
 import { UpdateArticleDto } from '../dto/article/update-article.dto';
+import { AuthGuard } from '../guards/auth.guard';
+import { OptionalAuthGuard } from '../guards/optional-auth.guard';
+import type {
+  AuthenticatedRequest,
+  OptionalAuthenticatedRequest,
+} from '../types/auth';
 
 @Controller('/api/articles')
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
-  @Get()
+  @Get('/')
+  @UseGuards(OptionalAuthGuard)
   getArticles(
     @Query() query: { tag?: string; author?: string; favorited?: string },
-    @Query('userId') userId?: string,
+    @Req() req: OptionalAuthenticatedRequest,
   ) {
-    return this.articleService.getArticles(
-      query,
-      userId ? parseInt(userId, 10) : undefined,
-    );
+    return this.articleService.getArticles(query, req.user?.id);
   }
 
-  @Get('feed')
-  getFeed(@Query('userId') userId: string) {
-    return this.articleService.getFeed(parseInt(userId, 10));
+  @Get('/feed')
+  @UseGuards(AuthGuard)
+  getFeed(@Req() req: AuthenticatedRequest) {
+    return this.articleService.getFeed(req.user.id);
   }
 
-  @Get(':slug')
+  @Get('/:slug')
+  @UseGuards(OptionalAuthGuard)
   getArticleBySlug(
     @Param('slug') slug: string,
-    @Query('userId') userId?: string,
+    @Req() req: OptionalAuthenticatedRequest,
   ) {
-    return this.articleService.getArticleBySlug(
-      slug,
-      userId ? parseInt(userId, 10) : undefined,
-    );
+    return this.articleService.getArticleBySlug(slug, req.user?.id);
   }
 
-  @Post()
-  createArticle(
-    @Body() dto: CreateArticleDto,
-    @Query('userId') userId: string,
-  ) {
-    return this.articleService.createArticle(dto, parseInt(userId, 10));
+  @Post('/')
+  @UseGuards(AuthGuard)
+  createArticle(@Body() dto: CreateArticleDto, @Req() req: AuthenticatedRequest) {
+    return this.articleService.createArticle(dto, req.user.id);
   }
 
-  @Put(':slug')
+  @Put('/:slug')
+  @UseGuards(AuthGuard)
   updateArticle(
     @Param('slug') slug: string,
     @Body() dto: UpdateArticleDto,
-    @Query('userId') userId: string,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.articleService.updateArticle(slug, dto, parseInt(userId, 10));
+    return this.articleService.updateArticle(slug, dto, req.user.id);
   }
 
-  @Delete(':slug')
+  @Delete('/:slug')
   @HttpCode(HttpStatus.NO_CONTENT)
-  deleteArticle(
-    @Param('slug') slug: string,
-    @Query('userId') userId: string,
-  ) {
-    return this.articleService.deleteArticle(slug, parseInt(userId, 10));
+  @UseGuards(AuthGuard)
+  deleteArticle(@Param('slug') slug: string, @Req() req: AuthenticatedRequest) {
+    return this.articleService.deleteArticle(slug, req.user.id);
   }
 
-  @Post(':slug/favorite')
+  @Post('/:slug/favorite')
+  @UseGuards(AuthGuard)
   favoriteArticle(
     @Param('slug') slug: string,
-    @Query('userId') userId: string,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.articleService.favoriteArticle(slug, parseInt(userId, 10));
+    return this.articleService.favoriteArticle(slug, req.user.id);
   }
 
-  @Delete(':slug/favorite')
+  @Delete('/:slug/favorite')
+  @UseGuards(AuthGuard)
   unfavoriteArticle(
     @Param('slug') slug: string,
-    @Query('userId') userId: string,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.articleService.unfavoriteArticle(slug, parseInt(userId, 10));
+    return this.articleService.unfavoriteArticle(slug, req.user.id);
   }
 }
