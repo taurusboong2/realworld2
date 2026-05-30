@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { prisma } from '../clients/prisma.client';
+import { TagResponseDto } from '../dto/tag/tag-response.dto';
 
 @Injectable()
 export class TagService {
@@ -10,9 +11,6 @@ export class TagService {
       },
     });
 
-    // 태그 이름만 추출하여 배열로 반환
-    return {
-      tags: tags.map((tag) => tag.name),
-    };
+    return TagResponseDto.fromTagNames(tags.map((tag) => tag.name));
   }
 }

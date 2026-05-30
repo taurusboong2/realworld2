@@ -4,7 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { prisma } from '../clients/prisma.client';
-import { AddCommentDto } from '../dto/comment/AddComment.dto';
+import { AddCommentDto } from '../dto/comment/add-comment.dto';
+import { CommentResponseDto } from '../dto/comment/comment-response.dto';
 
 @Injectable()
 export class CommentService {
@@ -32,7 +33,7 @@ export class CommentService {
       },
     });
 
-    return { comment: this.formatComment(comment, userId) };
+    return { comment: CommentResponseDto.fromModel(comment, userId) };
   }
 
   async getComments(slug: string, currentUserId?: number) {
@@ -60,7 +61,7 @@ export class CommentService {
 
     return {
       comments: comments.map((comment) =>
-        this.formatComment(comment, currentUserId),
+        CommentResponseDto.fromModel(comment, currentUserId),
       ),
     };
   }
@@ -86,36 +87,5 @@ export class CommentService {
     await prisma.comment.delete({
       where: { id: commentId },
     });
-  }
-
-  private formatComment(
-    comment: {
-      id: number;
-      createdAt: Date;
-      updatedAt: Date;
-      body: string;
-      author: {
-        username: string;
-        bio: string | null;
-        image: string | null;
-        followedBy?: { id: number }[];
-      };
-    },
-    currentUserId?: number,
-  ) {
-    return {
-      id: comment.id,
-      createdAt: comment.createdAt,
-      updatedAt: comment.updatedAt,
-      body: comment.body,
-      author: {
-        username: comment.author.username,
-        bio: comment.author.bio,
-        image: comment.author.image,
-        following: currentUserId
-          ? (comment.author.followedBy?.length ?? 0) > 0
-          : false,
-      },
-    };
   }
 }

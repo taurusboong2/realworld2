@@ -15,16 +15,13 @@ import { prisma } from '../clients/prisma.client';
 import { AddUserDto } from '../dto/user/add-user.dto';
 import { LoginUserDto } from '../dto/user/login-user.dto';
 import { UpdateUserDto } from '../dto/user/update-user.dto';
+import { UserResponseDto } from '../dto/user/user-response.dto';
 
 const pbkdf2 = promisify(pbkdf2Callback);
 const passwordHashPrefix = 'pbkdf2_sha256';
 
-type UserResponse = Omit<User, 'password'> & {
-  token?: string;
-};
-
 type LoginResult = {
-  user: UserResponse;
+  user: UserResponseDto;
   accessToken: string;
 };
 
@@ -35,7 +32,7 @@ export class UserService {
   async getUsers() {
     const users = await prisma.user.findMany();
     return {
-      users: users.map((user) => this.formatUser(user)),
+      users: users.map((user) => UserResponseDto.fromModel(user)),
     };
   }
 
@@ -52,7 +49,7 @@ export class UserService {
       });
 
       return {
-        user: this.formatUser(user),
+        user: UserResponseDto.fromModel(user),
       };
     } catch (error) {
       if (
@@ -79,7 +76,7 @@ export class UserService {
     }
 
     return {
-      user: this.formatUser(user),
+      user: UserResponseDto.fromModel(user),
       accessToken: this.generateToken(user),
     };
   }
@@ -94,7 +91,7 @@ export class UserService {
     }
 
     return {
-      user: this.formatUser(user),
+      user: UserResponseDto.fromModel(user),
     };
   }
 
@@ -116,7 +113,7 @@ export class UserService {
       });
 
       return {
-        user: this.formatUser(user),
+        user: UserResponseDto.fromModel(user),
       };
     } catch (error) {
       if (
@@ -128,15 +125,6 @@ export class UserService {
 
       throw error;
     }
-  }
-
-  private formatUser(user: User, includeToken = false): UserResponse {
-    const { password, ...responseUser } = user;
-
-    return {
-      ...responseUser,
-      token: includeToken ? this.generateToken(user) : undefined,
-    };
   }
 
   private async hashPassword(password: string): Promise<string> {

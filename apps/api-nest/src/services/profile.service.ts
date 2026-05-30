@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { prisma } from '../clients/prisma.client';
+import { ProfileResponseDto } from '../dto/profile/profile-response.dto';
 
 @Injectable()
 export class ProfileService {
@@ -16,12 +17,10 @@ export class ProfileService {
     }
 
     return {
-      profile: {
-        username: user.username,
-        bio: user.bio,
-        image: user.image,
-        following: currentUserId ? user.followedBy.length > 0 : false,
-      },
+      profile: ProfileResponseDto.fromModel(
+        user,
+        currentUserId ? user.followedBy.length > 0 : false,
+      ),
     };
   }
 
@@ -44,12 +43,7 @@ export class ProfileService {
     });
 
     return {
-      profile: {
-        username: userToFollow.username,
-        bio: userToFollow.bio,
-        image: userToFollow.image,
-        following: true,
-      },
+      profile: ProfileResponseDto.fromModel(userToFollow, true),
     };
   }
 
@@ -72,12 +66,7 @@ export class ProfileService {
     });
 
     return {
-      profile: {
-        username: userToUnfollow.username,
-        bio: userToUnfollow.bio,
-        image: userToUnfollow.image,
-        following: false,
-      },
+      profile: ProfileResponseDto.fromModel(userToUnfollow, false),
     };
   }
 }
