@@ -50,12 +50,13 @@ Important rule: do not add a second Prisma schema, generated client, or SQLite D
 
 - File names: kebab-case.
 - DTO files: `create-user.dto.ts`, `update-user.dto.ts`, `login-user.dto.ts`.
+- Response DTO files should also use kebab-case, for example `article-response.dto.ts` and `user-response.dto.ts`.
 - Controllers: `users.controller.ts`.
 - Services: `users.service.ts`.
 - Modules: `users.module.ts`.
 - Guards: `auth.guard.ts`, `optional-auth.guard.ts`.
 - Shared types under `src/types`: short domain names such as `auth.ts`, `article.ts`.
-- Class names: `CreateUserDto`, `UsersController`, `UsersService`, `UsersModule`.
+- Class names: `CreateUserDto`, `ArticleResponseDto`, `UsersController`, `UsersService`, `UsersModule`.
 
 Existing names such as `AddUserDto` may remain when making small changes. For new APIs, prefer the names above.
 
@@ -85,6 +86,8 @@ Existing names such as `AddUserDto` may remain when making small changes. For ne
 - Add response DTOs or presenters once response shape matters.
 - Use `unknown` plus narrowing for unsafe inputs. Do not use `any` or `as any` to bypass type errors.
 - Keep DTO classes focused on one request/response shape.
+- Request DTOs and response DTOs should be separate classes.
+- When response shape is stable, prefer a response DTO static factory such as `ArticleResponseDto.fromModel(model)` over service-local `formatArticle` or `formatUser` helpers.
 
 ## Prisma Rules
 
@@ -129,6 +132,11 @@ Example direction:
 
 Current early endpoints may still return raw Prisma models, but password fields should be removed before auth work continues.
 
+- Do not add new ad-hoc formatter methods such as `formatArticle` or `formatUser` once a response DTO exists for that resource.
+- Use purpose-specific response DTOs such as `ArticleResponseDto` and `UserResponseDto`.
+- Split nested response objects into smaller DTOs when the nested shape is reused, for example author or comment response objects.
+- Keep RealWorld envelopes consistent: `{ user }`, `{ article }`, `{ articles, articlesCount }`, `{ comments }`, `{ tags }`.
+
 ## Auth And Cookies
 
 - Auth guards should live in `src/guards`.
@@ -136,6 +144,21 @@ Current early endpoints may still return raw Prisma models, but password fields 
 - Cookie parsing utilities should live in `src/utils/cookie.ts` when needed.
 - Required auth routes should throw `UnauthorizedException` when no valid user is present.
 - Optional auth routes should tolerate missing or invalid credentials and continue as anonymous.
+
+## Formatting And Lint Rules
+
+- Follow `apps/api-nest/.prettierrc`.
+- Current formatting uses single quotes and trailing commas.
+- Style conflicts should be resolved by Prettier/Eslint, not personal preference.
+- Keep imports and long object literals readable after edits.
+
+## Type Safety Rules
+
+- Follow `apps/api-nest/tsconfig.json`.
+- Do not introduce implicit `any`.
+- Avoid explicit `any`; prefer DTOs, Prisma types, Nest types, or `unknown` plus narrowing.
+- Do not use `as any` or `<any>` to bypass type errors.
+- If a Prisma include result is awkward to type, define a local precise type or use Prisma helper types rather than weakening the whole service.
 
 ## Testing
 
@@ -153,3 +176,14 @@ corepack pnpm --filter @repo/api-nest test:e2e
 ```
 
 If e2e fails with a sandbox `EPERM` while opening an HTTP listener, rerun with the required execution permission rather than changing app code.
+
+## Validation Checklist
+
+- For doc-only skill edits, run `git diff --check`.
+- For API code edits, run at least:
+
+```bash
+corepack pnpm --filter @repo/api-nest build
+```
+
+- When controllers, modules, DTO validation, or response shape changes, also run unit and e2e tests.
