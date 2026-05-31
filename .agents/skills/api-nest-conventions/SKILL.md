@@ -55,7 +55,7 @@ Important rule: do not add a second Prisma schema, generated client, or SQLite D
 - Services: `users.service.ts`.
 - Modules: `users.module.ts`.
 - Guard files: lower-case kebab-case plus `.guard.ts`, for example `auth.guard.ts`, `optional-auth.guard.ts`, `cookie-auth.guard.ts`.
-- Shared types under `src/types`: short domain names such as `auth.ts`, `article.ts`.
+- Shared type files under `src/types`: short domain names plus `.ts`, for example `auth.ts`, `article.ts`, `comment.ts`.
 - Class names: `CreateUserDto`, `ArticleResponseDto`, `UsersController`, `UsersService`, `UsersModule`.
 
 Existing names such as `AddUserDto` may remain when making small changes. For new APIs, prefer the names above.
@@ -67,6 +67,8 @@ Existing names such as `AddUserDto` may remain when making small changes. For ne
 - Do not put business logic in controllers.
 - Do not return passwords, tokens, or raw DB errors.
 - Prefer explicit route paths on new handlers once a controller has mixed nested routes, for example `@Get('/')`, `@Post('/')`, `@Get('/:slug')`.
+- Method route decorator paths should start with `/`, for example `@Get('/user')`, `@Post('/users')`, `@Delete('/:slug')`.
+- Root handlers should use an explicit slash, for example `@Get('/')` instead of `@Get()`.
 - If an existing controller uses `@Get()` style routes, do not rename route decorators unless it is part of the requested change.
 - Authenticated routes should get the current user from a guard-populated request object, not from `userId` query parameters.
 
