@@ -35,3 +35,36 @@ export type Comment = {
   body: string;
   author: Profile;
 };
+
+export type AuthResponse = {
+  user: User;
+};
+
+export type UsersResponse = {
+  users: User[];
+};
+
+export type ProfileResponse = {
+  profile: Profile;
+};
+
+export type ArticleResponse = {
+  article: Article;
+};
+
+export type ArticleListResponse = {
+  articles: Article[];
+  articlesCount: number;
+};
+
+export type CommentResponse = {
+  comment: Comment;
+};
+
+export type CommentListResponse = {
+  comments: Comment[];
+};
+
+export type TagListResponse = {
+  tags: Tag[];
+};
