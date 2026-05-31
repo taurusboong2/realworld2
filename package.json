@@ -13,7 +13,7 @@
         "p:generate": "corepack pnpm --filter @repo/database exec prisma generate",
         "p:migrate": "corepack pnpm --filter @repo/database exec prisma migrate dev",
         "p:validate": "corepack pnpm --filter @repo/database exec prisma validate",
-        "p:studio": "corepack pnpm --filter @repo/database exec prisma studio",
+        "p:studio": "corepack pnpm --filter @repo/database exec prisma studio --port 3002",
         "p:push": "corepack pnpm --filter @repo/database exec prisma db push",
         "p:seed": "corepack pnpm --filter @repo/database exec tsx seed.ts",
         "nest:dev": "turbo run dev --filter=@repo/api-nest"
