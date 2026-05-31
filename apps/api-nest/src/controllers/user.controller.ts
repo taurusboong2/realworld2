@@ -23,17 +23,17 @@ import type { AuthenticatedRequest } from '../types/auth';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('users')
+  @Get('/users')
   getUsers() {
     return this.userService.getUsers();
   }
 
-  @Post('users')
+  @Post('/users')
   createUser(@Body() addUserDto: AddUserDto) {
     return this.userService.createUser(addUserDto);
   }
 
-  @Post('users/login')
+  @Post('/users/login')
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() loginDto: LoginUserDto,
@@ -52,13 +52,13 @@ export class UserController {
     return { user };
   }
 
-  @Get('user')
+  @Get('/user')
   @UseGuards(AuthGuard)
   getCurrentUser(@Req() req: AuthenticatedRequest) {
     return this.userService.getCurrentUser(req.user.id);
   }
 
-  @Put('user')
+  @Put('/user')
   @UseGuards(AuthGuard)
   updateUser(
     @Req() req: AuthenticatedRequest,

@@ -5,7 +5,7 @@ import { DefaultService } from '../services/default.service';
 export class DefaultController {
   constructor(private readonly defaultService: DefaultService) {}
 
-  @Get()
+  @Get('/')
   getFoo() {
     return this.defaultService.hello();
   }
