@@ -7,45 +7,52 @@ import {
   HttpStatus,
   Param,
   Post,
-  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { CommentService } from '../services/comment.service';
-import { AddCommentDto } from '../dto/comment/AddComment.dto';
+import { AddCommentDto } from '../dto/comment/add-comment.dto';
+import { AuthGuard } from '../guards/auth.guard';
+import { OptionalAuthGuard } from '../guards/optional-auth.guard';
+import type {
+  AuthenticatedRequest,
+  OptionalAuthenticatedRequest,
+} from '../types/auth';
 
 @Controller('/api/articles/:slug/comments')
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
-  @Post()
+  @Post('/')
+  @UseGuards(AuthGuard)
   createComment(
     @Param('slug') slug: string,
-    @Query('userId') userId: string,
+    @Req() req: AuthenticatedRequest,
     @Body() dto: AddCommentDto,
   ) {
-    return this.commentService.createComment(slug, parseInt(userId, 10), dto);
+    return this.commentService.createComment(slug, req.user.id, dto);
   }
 
-  @Get()
+  @Get('/')
+  @UseGuards(OptionalAuthGuard)
   getComments(
     @Param('slug') slug: string,
-    @Query('userId') userId?: string,
+    @Req() req: OptionalAuthenticatedRequest,
   ) {
-    return this.commentService.getComments(
-      slug,
-      userId ? parseInt(userId, 10) : undefined,
-    );
+    return this.commentService.getComments(slug, req.user?.id);
   }
 
-  @Delete(':id')
+  @Delete('/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AuthGuard)
   deleteComment(
     @Param('slug') slug: string,
     @Param('id') commentId: string,
-    @Query('userId') userId: string,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.commentService.deleteComment(
       slug,
-      parseInt(userId, 10),
+      req.user.id,
       parseInt(commentId, 10),
     );
   }

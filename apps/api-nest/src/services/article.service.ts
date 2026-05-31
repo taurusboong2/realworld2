@@ -6,44 +6,9 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@repo/database';
 import { prisma } from '../clients/prisma.client';
+import { ArticleResponseDto } from '../dto/article/article-response.dto';
 import { CreateArticleDto } from '../dto/article/create-article.dto';
 import { UpdateArticleDto } from '../dto/article/update-article.dto';
-
-type ArticleRecord = {
-  id: number;
-  slug: string;
-  title: string;
-  description: string;
-  body: string;
-  createdAt: Date;
-  updatedAt: Date;
-  authorId: number;
-  author: {
-    username: string;
-    bio: string | null;
-    image: string | null;
-    followedBy?: { id: number }[];
-  };
-  tagList: {
-    name: string;
-  }[];
-  favoritedBy?: { id: number }[];
-  _count?: {
-    favoritedBy: number;
-  };
-};
-
-type ArticleResponse = Omit<
-  ArticleRecord,
-  'tagList' | 'author' | 'favoritedBy' | '_count'
-> & {
-  tagList: string[];
-  favorited: boolean;
-  favoritesCount: number;
-  author: Pick<ArticleRecord['author'], 'username' | 'bio' | 'image'> & {
-    following: boolean;
-  };
-};
 
 @Injectable()
 export class ArticleService {
@@ -75,7 +40,9 @@ export class ArticleService {
     ]);
 
     return {
-      articles: articles.map((article) => this.formatArticle(article, userId)),
+      articles: articles.map((article) =>
+        ArticleResponseDto.fromModel(article, userId),
+      ),
       articlesCount,
     };
   }
@@ -111,7 +78,7 @@ export class ArticleService {
 
     return {
       articles: articles.map((article) =>
-        this.formatArticle(article, parsedUserId),
+        ArticleResponseDto.fromModel(article, parsedUserId),
       ),
       articlesCount,
     };
@@ -128,7 +95,7 @@ export class ArticleService {
     }
 
     return {
-      article: this.formatArticle(article, userId),
+      article: ArticleResponseDto.fromModel(article, userId),
     };
   }
 
@@ -155,7 +122,7 @@ export class ArticleService {
       });
 
       return {
-        article: this.formatArticle(article, authorId),
+        article: ArticleResponseDto.fromModel(article, authorId),
       };
     } catch (error) {
       this.handlePrismaError(error);
@@ -177,7 +144,7 @@ export class ArticleService {
       });
 
       return {
-        article: this.formatArticle(article, parsedUserId),
+        article: ArticleResponseDto.fromModel(article, parsedUserId),
       };
     } catch (error) {
       this.handlePrismaError(error);
@@ -199,7 +166,7 @@ export class ArticleService {
       });
 
       return {
-        article: this.formatArticle(article, parsedUserId),
+        article: ArticleResponseDto.fromModel(article, parsedUserId),
       };
     } catch (error) {
       this.handlePrismaError(error);
@@ -243,7 +210,7 @@ export class ArticleService {
     });
 
     return {
-      article: this.formatArticle(updated, parsedUserId),
+      article: ArticleResponseDto.fromModel(updated, parsedUserId),
     };
   }
 
@@ -281,24 +248,6 @@ export class ArticleService {
       favoritedBy: userId ? { where: { id: userId } } : false,
       _count: { select: { favoritedBy: true } },
     } as const;
-  }
-
-  private formatArticle(article: ArticleRecord, userId?: number): ArticleResponse {
-    const { tagList, author, favoritedBy = [], _count, ...articleFields } =
-      article;
-
-    return {
-      ...articleFields,
-      tagList: tagList.map((tag) => tag.name),
-      favorited: userId ? favoritedBy.length > 0 : false,
-      favoritesCount: _count?.favoritedBy ?? 0,
-      author: {
-        username: author.username,
-        bio: author.bio,
-        image: author.image,
-        following: userId ? (author.followedBy?.length ?? 0) > 0 : false,
-      },
-    };
   }
 
   private parseUserId(userId: number) {

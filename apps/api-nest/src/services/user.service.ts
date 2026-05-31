@@ -12,25 +12,26 @@ import {
 import { promisify } from 'util';
 import { Prisma, User } from '@repo/database';
 import { prisma } from '../clients/prisma.client';
+import { env } from '../constants/env';
 import { AddUserDto } from '../dto/user/add-user.dto';
 import { LoginUserDto } from '../dto/user/login-user.dto';
 import { UpdateUserDto } from '../dto/user/update-user.dto';
+import { UserResponseDto } from '../dto/user/user-response.dto';
 
 const pbkdf2 = promisify(pbkdf2Callback);
 const passwordHashPrefix = 'pbkdf2_sha256';
 
-type UserResponse = Omit<User, 'password'> & {
-  token?: string;
+type LoginResult = {
+  user: UserResponseDto;
+  accessToken: string;
 };
 
 @Injectable()
 export class UserService {
-  private readonly jwtSecret = process.env.JWT_SECRET ?? 'super-secret-key';
-
   async getUsers() {
     const users = await prisma.user.findMany();
     return {
-      users: users.map((user) => this.formatUser(user)),
+      users: users.map((user) => UserResponseDto.fromModel(user)),
     };
   }
 
@@ -47,7 +48,7 @@ export class UserService {
       });
 
       return {
-        user: this.formatUser(user, true),
+        user: UserResponseDto.fromModel(user),
       };
     } catch (error) {
       if (
@@ -61,7 +62,7 @@ export class UserService {
     }
   }
 
-  async login(loginDto: LoginUserDto) {
+  async login(loginDto: LoginUserDto): Promise<LoginResult> {
     const { user: details } = loginDto;
     const user = await prisma.user.findUnique({
       where: {
@@ -74,7 +75,8 @@ export class UserService {
     }
 
     return {
-      user: this.formatUser(user, true),
+      user: UserResponseDto.fromModel(user),
+      accessToken: this.generateToken(user),
     };
   }
 
@@ -88,7 +90,7 @@ export class UserService {
     }
 
     return {
-      user: this.formatUser(user, true),
+      user: UserResponseDto.fromModel(user),
     };
   }
 
@@ -110,7 +112,7 @@ export class UserService {
       });
 
       return {
-        user: this.formatUser(user, true),
+        user: UserResponseDto.fromModel(user),
       };
     } catch (error) {
       if (
@@ -122,15 +124,6 @@ export class UserService {
 
       throw error;
     }
-  }
-
-  private formatUser(user: User, includeToken = false): UserResponse {
-    const { password, ...responseUser } = user;
-
-    return {
-      ...responseUser,
-      token: includeToken ? this.generateToken(user) : undefined,
-    };
   }
 
   private async hashPassword(password: string): Promise<string> {
@@ -178,9 +171,9 @@ export class UserService {
       sub: user.id,
       email: user.email,
       username: user.username,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+      exp: Math.floor(Date.now() / 1000) + env.jwtExpiresInSeconds,
     });
-    const signature = createHmac('sha256', this.jwtSecret)
+    const signature = createHmac('sha256', env.jwtSecret)
       .update(`${header}.${payload}`)
       .digest('base64url');
 

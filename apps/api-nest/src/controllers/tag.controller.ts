@@ -5,7 +5,7 @@ import { TagService } from '../services/tag.service';
 export class TagController {
   constructor(private readonly tagService: TagService) {}
 
-  @Get()
+  @Get('/')
   async getTags() {
     return this.tagService.findAll();
   }

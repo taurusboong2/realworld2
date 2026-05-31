@@ -1,37 +1,44 @@
-import { Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ProfileService } from '../services/profile.service';
+import { AuthGuard } from '../guards/auth.guard';
+import type { AuthenticatedRequest } from '../types/auth';
 
 @Controller('/api/profiles/:username')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
-  @Get()
+  @Get('/')
+  @UseGuards(AuthGuard)
   getProfile(
     @Param('username') username: string,
-    @Query('currentUserId') currentUserId?: string,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.profileService.getProfile(
-      username,
-      currentUserId ? parseInt(currentUserId, 10) : undefined,
-    );
+    return this.profileService.getProfile(username, req.user.id);
   }
 
-  @Post('follow')
+  @Post('/follow')
+  @UseGuards(AuthGuard)
   followUser(
     @Param('username') username: string,
-    @Query('currentUserId') currentUserId: string,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.profileService.followUser(username, parseInt(currentUserId, 10));
+    return this.profileService.followUser(username, req.user.id);
   }
 
-  @Delete('follow')
+  @Delete('/follow')
+  @UseGuards(AuthGuard)
   unfollowUser(
     @Param('username') username: string,
-    @Query('currentUserId') currentUserId: string,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.profileService.unfollowUser(
-      username,
-      parseInt(currentUserId, 10),
-    );
+    return this.profileService.unfollowUser(username, req.user.id);
   }
 }

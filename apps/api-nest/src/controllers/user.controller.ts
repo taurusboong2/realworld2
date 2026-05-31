@@ -6,43 +6,64 @@ import {
   HttpStatus,
   Post,
   Put,
-  Query,
+  Req,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
+import { env } from '../constants/env';
 import { AddUserDto } from '../dto/user/add-user.dto';
 import { LoginUserDto } from '../dto/user/login-user.dto';
 import { UpdateUserDto } from '../dto/user/update-user.dto';
+import { AuthGuard } from '../guards/auth.guard';
 import { UserService } from '../services/user.service';
+import type { AuthenticatedRequest } from '../types/auth';
 
 @Controller('/api')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('users')
+  @Get('/users')
   getUsers() {
     return this.userService.getUsers();
   }
 
-  @Post('users')
+  @Post('/users')
   createUser(@Body() addUserDto: AddUserDto) {
     return this.userService.createUser(addUserDto);
   }
 
-  @Post('users/login')
+  @Post('/users/login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() loginDto: LoginUserDto) {
-    return this.userService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const { user, accessToken } = await this.userService.login(loginDto);
+
+    response.cookie(env.authCookieName, accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: env.nodeEnv === 'production',
+      maxAge: env.jwtExpiresInSeconds * 1000,
+      path: '/',
+    });
+
+    return { user };
   }
 
-  @Get('user')
-  getCurrentUser(@Query('userId') userId: string) {
-    return this.userService.getCurrentUser(parseInt(userId, 10));
+  @Get('/user')
+  @UseGuards(AuthGuard)
+  getCurrentUser(@Req() req: AuthenticatedRequest) {
+    return this.userService.getCurrentUser(req.user.id);
   }
 
-  @Put('user')
+  @Put('/user')
+  @UseGuards(AuthGuard)
   updateUser(
-    @Query('userId') userId: string,
+    @Req() req: AuthenticatedRequest,
     @Body() updateDto: UpdateUserDto,
   ) {
-    return this.userService.updateUser(parseInt(userId, 10), updateDto);
+    return this.userService.updateUser(req.user.id, updateDto);
   }
 }
