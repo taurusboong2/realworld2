@@ -52,6 +52,19 @@ export class UserController {
     return { user };
   }
 
+  @Post('/users/logout')
+  @HttpCode(HttpStatus.OK)
+  logout(@Res({ passthrough: true }) response: Response) {
+    response.clearCookie(env.authCookieName, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: env.nodeEnv === 'production',
+      path: '/',
+    });
+
+    return { ok: true };
+  }
+
   @Get('/user')
   @UseGuards(AuthGuard)
   getCurrentUser(@Req() req: AuthenticatedRequest) {
