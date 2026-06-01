@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { AuthResponse, UsersResponse } from './types';
+import type { AuthResponse, LogoutResponse, UsersResponse } from './types';
 
 export type RegisterUserInput = {
   username: string;
@@ -37,6 +37,12 @@ export async function loginUser(user: LoginUserInput): Promise<AuthResponse> {
   return apiFetch<AuthResponse>('/users/login', {
     method: 'POST',
     body: { user },
+  });
+}
+
+export async function logoutUser(): Promise<LogoutResponse> {
+  return apiFetch<LogoutResponse>('/users/logout', {
+    method: 'POST',
   });
 }
 

@@ -40,6 +40,10 @@ export type AuthResponse = {
   user: User;
 };
 
+export type LogoutResponse = {
+  ok: boolean;
+};
+
 export type UsersResponse = {
   users: User[];
 };
