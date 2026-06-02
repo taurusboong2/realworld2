@@ -20,41 +20,43 @@ export type UpdateCurrentUserInput = Partial<{
   image: string;
 }>;
 
-export async function getUsers(): Promise<UsersResponse> {
+export const getUsers = async (): Promise<UsersResponse> => {
   return apiFetch<UsersResponse>('/users');
-}
+};
 
-export async function registerUser(
+export const registerUser = async (
   user: RegisterUserInput,
-): Promise<AuthResponse> {
+): Promise<AuthResponse> => {
   return apiFetch<AuthResponse>('/users', {
     method: 'POST',
     body: { user },
   });
-}
+};
 
-export async function loginUser(user: LoginUserInput): Promise<AuthResponse> {
+export const loginUser = async (
+  user: LoginUserInput,
+): Promise<AuthResponse> => {
   return apiFetch<AuthResponse>('/users/login', {
     method: 'POST',
     body: { user },
   });
-}
+};
 
-export async function logoutUser(): Promise<LogoutResponse> {
+export const logoutUser = async (): Promise<LogoutResponse> => {
   return apiFetch<LogoutResponse>('/users/logout', {
     method: 'POST',
   });
-}
+};
 
-export async function getCurrentUser(): Promise<AuthResponse> {
+export const getCurrentUser = async (): Promise<AuthResponse> => {
   return apiFetch<AuthResponse>('/user');
-}
+};
 
-export async function updateCurrentUser(
+export const updateCurrentUser = async (
   user: UpdateCurrentUserInput,
-): Promise<AuthResponse> {
+): Promise<AuthResponse> => {
   return apiFetch<AuthResponse>('/user', {
     method: 'PUT',
     body: { user },
   });
-}
+};

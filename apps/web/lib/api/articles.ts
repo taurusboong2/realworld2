@@ -20,7 +20,7 @@ export type UpdateArticleInput = Partial<{
   body: string;
 }>;
 
-function toSearchParams(params: GetArticlesParams = {}) {
+const toSearchParams = (params: GetArticlesParams = {}) => {
   const searchParams = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
@@ -30,71 +30,73 @@ function toSearchParams(params: GetArticlesParams = {}) {
   }
 
   return searchParams;
-}
+};
 
-function withQuery(path: string, params: URLSearchParams) {
+const withQuery = (path: string, params: URLSearchParams) => {
   const query = params.toString();
 
   return query ? `${path}?${query}` : path;
-}
+};
 
-export async function getArticles(
+export const getArticles = async (
   params: GetArticlesParams = {},
-): Promise<ArticleListResponse> {
+): Promise<ArticleListResponse> => {
   return apiFetch<ArticleListResponse>(
     withQuery('/articles', toSearchParams(params)),
   );
-}
+};
 
-export async function getFeed(): Promise<ArticleListResponse> {
+export const getFeed = async (): Promise<ArticleListResponse> => {
   return apiFetch<ArticleListResponse>('/articles/feed');
-}
+};
 
-export async function getArticle(slug: string): Promise<ArticleResponse> {
+export const getArticle = async (slug: string): Promise<ArticleResponse> => {
   return apiFetch<ArticleResponse>(`/articles/${encodeURIComponent(slug)}`);
-}
+};
 
-export async function createArticle(
+export const createArticle = async (
   article: CreateArticleInput,
-): Promise<ArticleResponse> {
+): Promise<ArticleResponse> => {
   return apiFetch<ArticleResponse>('/articles', {
     method: 'POST',
     body: { article },
   });
-}
+};
 
-export async function updateArticle(
+export const updateArticle = async (
   slug: string,
   article: UpdateArticleInput,
-): Promise<ArticleResponse> {
+): Promise<ArticleResponse> => {
   return apiFetch<ArticleResponse>(`/articles/${encodeURIComponent(slug)}`, {
     method: 'PUT',
     body: { article },
   });
-}
+};
 
-export async function deleteArticle(slug: string): Promise<void> {
+export const deleteArticle = async (slug: string): Promise<void> => {
   await apiFetch<null>(`/articles/${encodeURIComponent(slug)}`, {
     method: 'DELETE',
   });
-}
+};
 
-export async function favoriteArticle(slug: string): Promise<ArticleResponse> {
+export const favoriteArticle = async (
+  slug: string,
+): Promise<ArticleResponse> => {
   return apiFetch<ArticleResponse>(
     `/articles/${encodeURIComponent(slug)}/favorite`,
     {
       method: 'POST',
     },
   );
-}
+};
 
-export async function unfavoriteArticle(
+export const unfavoriteArticle = async (
   slug: string,
-): Promise<ArticleResponse> {
+): Promise<ArticleResponse> => {
   return apiFetch<ArticleResponse>(
     `/articles/${encodeURIComponent(slug)}/favorite`,
     {
       method: 'DELETE',
     },
   );
-}
+};

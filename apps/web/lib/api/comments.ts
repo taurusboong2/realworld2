@@ -5,34 +5,34 @@ export type CreateCommentInput = {
   body: string;
 };
 
-function articleCommentsPath(slug: string) {
+const articleCommentsPath = (slug: string) => {
   return `/articles/${encodeURIComponent(slug)}/comments`;
-}
+};
 
-export async function getComments(
+export const getComments = async (
   slug: string,
-): Promise<CommentListResponse> {
+): Promise<CommentListResponse> => {
   return apiFetch<CommentListResponse>(articleCommentsPath(slug));
-}
+};
 
-export async function createComment(
+export const createComment = async (
   slug: string,
   comment: CreateCommentInput,
-): Promise<CommentResponse> {
+): Promise<CommentResponse> => {
   return apiFetch<CommentResponse>(articleCommentsPath(slug), {
     method: 'POST',
     body: { comment },
   });
-}
+};
 
-export async function deleteComment(
+export const deleteComment = async (
   slug: string,
   commentId: number,
-): Promise<void> {
+): Promise<void> => {
   await apiFetch<null>(
     `${articleCommentsPath(slug)}/${encodeURIComponent(String(commentId))}`,
     {
       method: 'DELETE',
     },
   );
-}
+};

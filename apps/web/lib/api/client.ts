@@ -17,17 +17,17 @@ type ApiFetchOptions = Omit<RequestInit, 'body'> & {
 const browserApiBaseUrl = '/api/nest';
 const serverApiBaseUrl = `${process.env.NEST_API_URL ?? 'http://localhost:3001'}/api`;
 
-function getApiBaseUrl() {
+const getApiBaseUrl = () => {
   return typeof window === 'undefined' ? serverApiBaseUrl : browserApiBaseUrl;
-}
+};
 
-function buildUrl(path: string) {
+const buildUrl = (path: string) => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
   return `${getApiBaseUrl()}${normalizedPath}`;
-}
+};
 
-async function readJson(response: Response): Promise<unknown> {
+const readJson = async (response: Response): Promise<unknown> => {
   const text = await response.text();
 
   if (!text) {
@@ -35,12 +35,12 @@ async function readJson(response: Response): Promise<unknown> {
   }
 
   return JSON.parse(text) as unknown;
-}
+};
 
-export async function apiFetch<T>(
+export const apiFetch = async <T>(
   path: string,
   options: ApiFetchOptions = {},
-): Promise<T> {
+): Promise<T> => {
   const { body, headers, ...init } = options;
 
   const response = await fetch(buildUrl(path), {
@@ -60,4 +60,4 @@ export async function apiFetch<T>(
   }
 
   return data as T;
-}
+};

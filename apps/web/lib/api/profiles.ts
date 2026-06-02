@@ -1,26 +1,28 @@
 import { apiFetch } from './client';
 import type { ProfileResponse } from './types';
 
-function profilePath(username: string) {
+const profilePath = (username: string) => {
   return `/profiles/${encodeURIComponent(username)}`;
-}
+};
 
-export async function getProfile(username: string): Promise<ProfileResponse> {
-  return apiFetch<ProfileResponse>(profilePath(username));
-}
-
-export async function followProfile(
+export const getProfile = async (
   username: string,
-): Promise<ProfileResponse> {
+): Promise<ProfileResponse> => {
+  return apiFetch<ProfileResponse>(profilePath(username));
+};
+
+export const followProfile = async (
+  username: string,
+): Promise<ProfileResponse> => {
   return apiFetch<ProfileResponse>(`${profilePath(username)}/follow`, {
     method: 'POST',
   });
-}
+};
 
-export async function unfollowProfile(
+export const unfollowProfile = async (
   username: string,
-): Promise<ProfileResponse> {
+): Promise<ProfileResponse> => {
   return apiFetch<ProfileResponse>(`${profilePath(username)}/follow`, {
     method: 'DELETE',
   });
-}
+};
