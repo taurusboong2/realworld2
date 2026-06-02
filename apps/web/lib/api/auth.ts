@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiClient, requestApi } from './client';
 import type { AuthResponse, LogoutResponse, UsersResponse } from './types';
 
 export type RegisterUserInput = {
@@ -21,42 +21,56 @@ export type UpdateCurrentUserInput = Partial<{
 }>;
 
 export const getUsers = async (): Promise<UsersResponse> => {
-  return apiFetch<UsersResponse>('/users');
+  return requestApi(apiClient.get<UsersResponse>('/users'));
 };
 
 export const registerUser = async (
-  user: RegisterUserInput,
+  { username, email, password }: RegisterUserInput,
 ): Promise<AuthResponse> => {
-  return apiFetch<AuthResponse>('/users', {
-    method: 'POST',
-    body: { user },
-  });
+  return requestApi(
+    apiClient.post<AuthResponse>('/users', {
+      user: {
+        username,
+        email,
+        password,
+      },
+    }),
+  );
 };
 
 export const loginUser = async (
-  user: LoginUserInput,
+  { email, password }: LoginUserInput,
 ): Promise<AuthResponse> => {
-  return apiFetch<AuthResponse>('/users/login', {
-    method: 'POST',
-    body: { user },
-  });
+  return requestApi(
+    apiClient.post<AuthResponse>('/users/login', {
+      user: {
+        email,
+        password,
+      },
+    }),
+  );
 };
 
 export const logoutUser = async (): Promise<LogoutResponse> => {
-  return apiFetch<LogoutResponse>('/users/logout', {
-    method: 'POST',
-  });
+  return requestApi(apiClient.post<LogoutResponse>('/users/logout'));
 };
 
 export const getCurrentUser = async (): Promise<AuthResponse> => {
-  return apiFetch<AuthResponse>('/user');
+  return requestApi(apiClient.get<AuthResponse>('/user'));
 };
 
 export const updateCurrentUser = async (
-  user: UpdateCurrentUserInput,
+  { username, email, password, bio, image }: UpdateCurrentUserInput,
 ): Promise<AuthResponse> => {
-  return apiFetch<AuthResponse>('/user', {
-    method: 'PUT',
-    body: { user },
-  });
+  return requestApi(
+    apiClient.put<AuthResponse>('/user', {
+      user: {
+        username,
+        email,
+        password,
+        bio,
+        image,
+      },
+    }),
+  );
 };

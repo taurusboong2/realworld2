@@ -1,6 +1,6 @@
-import { apiFetch } from './client';
+import { apiClient, requestApi } from './client';
 import type { TagListResponse } from './types';
 
 export const getTags = async (): Promise<TagListResponse> => {
-  return apiFetch<TagListResponse>('/tags');
+  return requestApi(apiClient.get<TagListResponse>('/tags'));
 };

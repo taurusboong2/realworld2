@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiClient, requestApi } from './client';
 import type { ArticleListResponse, ArticleResponse } from './types';
 
 export type GetArticlesParams = {
@@ -41,62 +41,75 @@ const withQuery = (path: string, params: URLSearchParams) => {
 export const getArticles = async (
   params: GetArticlesParams = {},
 ): Promise<ArticleListResponse> => {
-  return apiFetch<ArticleListResponse>(
-    withQuery('/articles', toSearchParams(params)),
+  return requestApi(
+    apiClient.get<ArticleListResponse>(
+      withQuery('/articles', toSearchParams(params)),
+    ),
   );
 };
 
 export const getFeed = async (): Promise<ArticleListResponse> => {
-  return apiFetch<ArticleListResponse>('/articles/feed');
+  return requestApi(apiClient.get<ArticleListResponse>('/articles/feed'));
 };
 
 export const getArticle = async (slug: string): Promise<ArticleResponse> => {
-  return apiFetch<ArticleResponse>(`/articles/${encodeURIComponent(slug)}`);
+  return requestApi(
+    apiClient.get<ArticleResponse>(`/articles/${encodeURIComponent(slug)}`),
+  );
 };
 
 export const createArticle = async (
-  article: CreateArticleInput,
+  { title, description, body, tagList }: CreateArticleInput,
 ): Promise<ArticleResponse> => {
-  return apiFetch<ArticleResponse>('/articles', {
-    method: 'POST',
-    body: { article },
-  });
+  return requestApi(
+    apiClient.post<ArticleResponse>('/articles', {
+      article: {
+        title,
+        description,
+        body,
+        tagList,
+      },
+    }),
+  );
 };
 
 export const updateArticle = async (
   slug: string,
-  article: UpdateArticleInput,
+  { title, description, body }: UpdateArticleInput,
 ): Promise<ArticleResponse> => {
-  return apiFetch<ArticleResponse>(`/articles/${encodeURIComponent(slug)}`, {
-    method: 'PUT',
-    body: { article },
-  });
+  return requestApi(
+    apiClient.put<ArticleResponse>(`/articles/${encodeURIComponent(slug)}`, {
+      article: {
+        title,
+        description,
+        body,
+      },
+    }),
+  );
 };
 
 export const deleteArticle = async (slug: string): Promise<void> => {
-  await apiFetch<null>(`/articles/${encodeURIComponent(slug)}`, {
-    method: 'DELETE',
-  });
+  await requestApi(
+    apiClient.delete<void>(`/articles/${encodeURIComponent(slug)}`),
+  );
 };
 
 export const favoriteArticle = async (
   slug: string,
 ): Promise<ArticleResponse> => {
-  return apiFetch<ArticleResponse>(
-    `/articles/${encodeURIComponent(slug)}/favorite`,
-    {
-      method: 'POST',
-    },
+  return requestApi(
+    apiClient.post<ArticleResponse>(
+      `/articles/${encodeURIComponent(slug)}/favorite`,
+    ),
   );
 };
 
 export const unfavoriteArticle = async (
   slug: string,
 ): Promise<ArticleResponse> => {
-  return apiFetch<ArticleResponse>(
-    `/articles/${encodeURIComponent(slug)}/favorite`,
-    {
-      method: 'DELETE',
-    },
+  return requestApi(
+    apiClient.delete<ArticleResponse>(
+      `/articles/${encodeURIComponent(slug)}/favorite`,
+    ),
   );
 };

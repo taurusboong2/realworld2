@@ -1,3 +1,5 @@
+import axios, { AxiosError, type AxiosResponse } from 'axios';
+
 export class ApiError extends Error {
   status: number;
   response: unknown;
@@ -10,54 +12,48 @@ export class ApiError extends Error {
   }
 }
 
-type ApiFetchOptions = Omit<RequestInit, 'body'> & {
-  body?: unknown;
-};
-
 const browserApiBaseUrl = '/api/nest';
 const serverApiBaseUrl = `${process.env.NEST_API_URL ?? 'http://localhost:3001'}/api`;
+
+export const apiClient = axios.create({
+  withCredentials: true,
+  headers: {
+    Accept: 'application/json',
+  },
+});
 
 const getApiBaseUrl = () => {
   return typeof window === 'undefined' ? serverApiBaseUrl : browserApiBaseUrl;
 };
 
-const buildUrl = (path: string) => {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-
-  return `${getApiBaseUrl()}${normalizedPath}`;
-};
-
-const readJson = async (response: Response): Promise<unknown> => {
-  const text = await response.text();
-
-  if (!text) {
-    return null;
+const toApiError = (error: unknown) => {
+  if (error instanceof AxiosError) {
+    return new ApiError(
+      error.message,
+      error.response?.status ?? 0,
+      error.response?.data ?? null,
+    );
   }
 
-  return JSON.parse(text) as unknown;
+  if (error instanceof Error) {
+    return new ApiError(error.message, 0, null);
+  }
+
+  return new ApiError('Unknown API error', 0, null);
 };
 
-export const apiFetch = async <T>(
-  path: string,
-  options: ApiFetchOptions = {},
+export const requestApi = async <T>(
+  request: Promise<AxiosResponse<T>>,
 ): Promise<T> => {
-  const { body, headers, ...init } = options;
-
-  const response = await fetch(buildUrl(path), {
-    ...init,
-    credentials: 'include',
-    headers: {
-      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
-      ...headers,
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-
-  const data = await readJson(response);
-
-  if (!response.ok) {
-    throw new ApiError(response.statusText, response.status, data);
+  try {
+    const response = await request;
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
   }
-
-  return data as T;
 };
+
+apiClient.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
+  return config;
+});

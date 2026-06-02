@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiClient, requestApi } from './client';
 import type { CommentListResponse, CommentResponse } from './types';
 
 export type CreateCommentInput = {
@@ -12,27 +12,31 @@ const articleCommentsPath = (slug: string) => {
 export const getComments = async (
   slug: string,
 ): Promise<CommentListResponse> => {
-  return apiFetch<CommentListResponse>(articleCommentsPath(slug));
+  return requestApi(
+    apiClient.get<CommentListResponse>(articleCommentsPath(slug)),
+  );
 };
 
 export const createComment = async (
   slug: string,
-  comment: CreateCommentInput,
+  { body }: CreateCommentInput,
 ): Promise<CommentResponse> => {
-  return apiFetch<CommentResponse>(articleCommentsPath(slug), {
-    method: 'POST',
-    body: { comment },
-  });
+  return requestApi(
+    apiClient.post<CommentResponse>(articleCommentsPath(slug), {
+      comment: {
+        body,
+      },
+    }),
+  );
 };
 
 export const deleteComment = async (
   slug: string,
   commentId: number,
 ): Promise<void> => {
-  await apiFetch<null>(
-    `${articleCommentsPath(slug)}/${encodeURIComponent(String(commentId))}`,
-    {
-      method: 'DELETE',
-    },
+  await requestApi(
+    apiClient.delete<void>(
+      `${articleCommentsPath(slug)}/${encodeURIComponent(String(commentId))}`,
+    ),
   );
 };

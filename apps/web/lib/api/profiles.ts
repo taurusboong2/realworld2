@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiClient, requestApi } from './client';
 import type { ProfileResponse } from './types';
 
 const profilePath = (username: string) => {
@@ -8,21 +8,21 @@ const profilePath = (username: string) => {
 export const getProfile = async (
   username: string,
 ): Promise<ProfileResponse> => {
-  return apiFetch<ProfileResponse>(profilePath(username));
+  return requestApi(apiClient.get<ProfileResponse>(profilePath(username)));
 };
 
 export const followProfile = async (
   username: string,
 ): Promise<ProfileResponse> => {
-  return apiFetch<ProfileResponse>(`${profilePath(username)}/follow`, {
-    method: 'POST',
-  });
+  return requestApi(
+    apiClient.post<ProfileResponse>(`${profilePath(username)}/follow`),
+  );
 };
 
 export const unfollowProfile = async (
   username: string,
 ): Promise<ProfileResponse> => {
-  return apiFetch<ProfileResponse>(`${profilePath(username)}/follow`, {
-    method: 'DELETE',
-  });
+  return requestApi(
+    apiClient.delete<ProfileResponse>(`${profilePath(username)}/follow`),
+  );
 };
