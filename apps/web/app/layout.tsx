@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AuthProvider } from '@/components/auth-provider';
 import { Header } from '@/components/header';
 import './globals.css';
 
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <Header />
-        {children}
+        <AuthProvider>
+          <Header />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

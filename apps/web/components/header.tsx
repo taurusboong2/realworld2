@@ -1,12 +1,9 @@
+'use client';
+
 import Link from 'next/link';
-
-type HeaderUser = {
-  username: string;
-};
-
-type HeaderProps = {
-  currentUser?: HeaderUser | null;
-};
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useAuth } from '@/lib/auth/use-auth';
 
 const publicLinks = [
   { href: '/articles', label: 'Articles' },
@@ -25,14 +22,32 @@ function Logo() {
   );
 }
 
-export function Header({ currentUser = null }: HeaderProps) {
+export function Header() {
+  const router = useRouter();
+  const { status, user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+      router.push('/');
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
     <header className="site-header">
       <div className="site-header-inner">
         <Logo />
 
         <nav className="site-nav" aria-label="Primary navigation">
-          {currentUser ? (
+          {status === 'loading' ? (
+            <span className="site-nav-skeleton" aria-label="Loading user" />
+          ) : user ? (
             <>
               <Link href="/articles" className="site-nav-link">
                 Articles
@@ -44,11 +59,19 @@ export function Header({ currentUser = null }: HeaderProps) {
                 Settings
               </Link>
               <Link
-                href={`/profile/${encodeURIComponent(currentUser.username)}`}
+                href={`/profile/${encodeURIComponent(user.username)}`}
                 className="site-nav-link site-nav-link-active"
               >
-                {currentUser.username}
+                {user.username}
               </Link>
+              <button
+                type="button"
+                className="site-nav-button"
+                disabled={isLoggingOut}
+                onClick={handleLogout}
+              >
+                {isLoggingOut ? 'Logging out' : 'Logout'}
+              </button>
             </>
           ) : (
             publicLinks.map((link) => (
