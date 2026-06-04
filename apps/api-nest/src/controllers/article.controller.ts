@@ -29,7 +29,14 @@ export class ArticleController {
   @Get('/')
   @UseGuards(OptionalAuthGuard)
   getArticles(
-    @Query() query: { tag?: string; author?: string; favorited?: string },
+    @Query()
+    query: {
+      tag?: string;
+      author?: string;
+      favorited?: string;
+      limit?: string;
+      offset?: string;
+    },
     @Req() req: OptionalAuthenticatedRequest,
   ) {
     return this.articleService.getArticles(query, req.user?.id);

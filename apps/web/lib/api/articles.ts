@@ -5,6 +5,8 @@ export type GetArticlesParams = {
   tag?: string;
   author?: string;
   favorited?: string;
+  limit?: number;
+  offset?: number;
 };
 
 export type CreateArticleInput = {
@@ -25,7 +27,7 @@ const toSearchParams = (params: GetArticlesParams = {}) => {
 
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '') {
-      searchParams.set(key, value);
+      searchParams.set(key, String(value));
     }
   }
 

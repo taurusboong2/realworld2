@@ -10,13 +10,26 @@ import { ArticleResponseDto } from '../dto/article/article-response.dto';
 import { CreateArticleDto } from '../dto/article/create-article.dto';
 import { UpdateArticleDto } from '../dto/article/update-article.dto';
 
+const DEFAULT_ARTICLE_LIMIT = 20;
+
 @Injectable()
 export class ArticleService {
   async getArticles(
-    query: { tag?: string; author?: string; favorited?: string } = {},
+    query: {
+      tag?: string;
+      author?: string;
+      favorited?: string;
+      limit?: string;
+      offset?: string;
+    } = {},
     userId?: number,
   ) {
     const where: Prisma.ArticleWhereInput = {};
+    const limit = this.parsePaginationNumber(
+      query.limit,
+      DEFAULT_ARTICLE_LIMIT,
+    );
+    const offset = this.parsePaginationNumber(query.offset, 0);
 
     if (query.tag) {
       where.tagList = { some: { name: query.tag } };
@@ -33,6 +46,8 @@ export class ArticleService {
     const [articles, articlesCount] = await Promise.all([
       prisma.article.findMany({
         where,
+        take: limit,
+        skip: offset,
         include: this.articleInclude(userId),
         orderBy: { createdAt: 'desc' },
       }),
@@ -45,6 +60,20 @@ export class ArticleService {
       ),
       articlesCount,
     };
+  }
+
+  private parsePaginationNumber(value: string | undefined, fallback: number) {
+    if (!value) {
+      return fallback;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      return fallback;
+    }
+
+    return parsed;
   }
 
   async getFeed(userId: number) {
