@@ -20,17 +20,29 @@ export function ArticleCreateForm() {
   const [tags, setTags] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const canSubmit =
+    title.trim() !== '' && description.trim() !== '' && body.trim() !== '';
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
+
+    const trimmedTitle = title.trim();
+    const trimmedDescription = description.trim();
+    const trimmedBody = body.trim();
+
+    if (!trimmedTitle || !trimmedDescription || !trimmedBody) {
+      setErrorMessage('제목, 설명, 본문을 모두 입력해주세요.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const { article } = await createArticle({
-        title: title.trim(),
-        description: description.trim(),
-        body: body.trim(),
+        title: trimmedTitle,
+        description: trimmedDescription,
+        body: trimmedBody,
         tagList: parseTagList(tags),
       });
 
@@ -101,7 +113,11 @@ export function ArticleCreateForm() {
         </p>
       ) : null}
 
-      <button type="submit" className="form-submit form-submit-inline" disabled={isSubmitting}>
+      <button
+        type="submit"
+        className="form-submit form-submit-inline"
+        disabled={isSubmitting || !canSubmit}
+      >
         {isSubmitting ? 'Publishing' : 'Publish Article'}
       </button>
     </form>

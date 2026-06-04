@@ -11,6 +11,7 @@ import { CreateArticleDto } from '../dto/article/create-article.dto';
 import { UpdateArticleDto } from '../dto/article/update-article.dto';
 
 const DEFAULT_ARTICLE_LIMIT = 20;
+const MAX_ARTICLE_LIMIT = 100;
 
 @Injectable()
 export class ArticleService {
@@ -25,11 +26,8 @@ export class ArticleService {
     userId?: number,
   ) {
     const where: Prisma.ArticleWhereInput = {};
-    const limit = this.parsePaginationNumber(
-      query.limit,
-      DEFAULT_ARTICLE_LIMIT,
-    );
-    const offset = this.parsePaginationNumber(query.offset, 0);
+    const limit = this.parseLimit(query.limit);
+    const offset = this.parseOffset(query.offset);
 
     if (query.tag) {
       where.tagList = { some: { name: query.tag } };
@@ -62,15 +60,29 @@ export class ArticleService {
     };
   }
 
-  private parsePaginationNumber(value: string | undefined, fallback: number) {
+  private parseLimit(value: string | undefined): number {
     if (!value) {
-      return fallback;
+      return DEFAULT_ARTICLE_LIMIT;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      return DEFAULT_ARTICLE_LIMIT;
+    }
+
+    return Math.min(parsed, MAX_ARTICLE_LIMIT);
+  }
+
+  private parseOffset(value: string | undefined): number {
+    if (!value) {
+      return 0;
     }
 
     const parsed = Number(value);
 
     if (!Number.isInteger(parsed) || parsed < 0) {
-      return fallback;
+      return 0;
     }
 
     return parsed;

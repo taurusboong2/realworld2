@@ -7,6 +7,14 @@ import { AuthFormShell } from '@/components/auth-form-shell';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import { useAuth } from '@/lib/auth/use-auth';
 
+const getSafeRedirectPath = (value: string | null) => {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+    return '/';
+  }
+
+  return value;
+};
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -16,7 +24,7 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const redirectTo = searchParams.get('redirectTo') ?? '/';
+  const redirectTo = getSafeRedirectPath(searchParams.get('redirectTo'));
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -30,6 +30,24 @@ const formatDate = (value: string) => {
   }).format(new Date(value));
 };
 
+const getArticlePageHref = (page: number) => {
+  return page === 1 ? '/articles' : `/articles?page=${page}`;
+};
+
+const getVisiblePages = (currentPage: number, totalPages: number) => {
+  const firstPage = 1;
+  const lastPage = totalPages;
+  const startPage = Math.max(firstPage, currentPage - 2);
+  const endPage = Math.min(lastPage, currentPage + 2);
+  const pages = new Set<number>([firstPage, lastPage]);
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    pages.add(page);
+  }
+
+  return Array.from(pages).sort((a, b) => a - b);
+};
+
 function ArticleCard({ article }: { article: Article }) {
   return (
     <article className="article-card">
@@ -74,22 +92,28 @@ function Pagination({
     return null;
   }
 
-  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+  const pages = getVisiblePages(currentPage, totalPages);
 
   return (
     <nav className="pagination" aria-label="Article pagination">
-      {pages.map((page) => {
+      {pages.map((page, index) => {
         const isCurrent = page === currentPage;
+        const previousPage = pages[index - 1];
+        const hasGap = previousPage !== undefined && page - previousPage > 1;
 
         return (
-          <Link
-            key={page}
-            href={page === 1 ? '/articles' : `/articles?page=${page}`}
-            aria-current={isCurrent ? 'page' : undefined}
-            className={isCurrent ? 'pagination-link is-current' : 'pagination-link'}
-          >
-            {page}
-          </Link>
+          <div key={page} className="pagination-item">
+            {hasGap ? <span className="pagination-gap">...</span> : null}
+            <Link
+              href={getArticlePageHref(page)}
+              aria-current={isCurrent ? 'page' : undefined}
+              className={
+                isCurrent ? 'pagination-link is-current' : 'pagination-link'
+              }
+            >
+              {page}
+            </Link>
+          </div>
         );
       })}
     </nav>

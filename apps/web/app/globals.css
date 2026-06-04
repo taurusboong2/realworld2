@@ -899,6 +899,19 @@ a {
   gap: 8px;
 }
 
+.pagination-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-gap {
+  color: #9aa49e;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
 .pagination-link {
   display: grid;
   min-width: 40px;
