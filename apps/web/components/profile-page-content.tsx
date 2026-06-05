@@ -5,7 +5,9 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { ArticleCard } from '@/components/article-card';
 import { ProfileFollowButton } from '@/components/profile-follow-button';
+import { RouteStatusScreen } from '@/components/route-status-screen';
 import { getArticles } from '@/lib/api/articles';
+import { ApiError } from '@/lib/api/client';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import { getProfile } from '@/lib/api/profiles';
 import type { Article, Profile } from '@/lib/api/types';
@@ -126,6 +128,7 @@ export function ProfilePageContent({ username }: ProfilePageContentProps) {
   const [profileErrorMessage, setProfileErrorMessage] = useState<string | null>(
     null,
   );
+  const [isProfileNotFound, setIsProfileNotFound] = useState(false);
   const [articlesErrorMessage, setArticlesErrorMessage] = useState<
     string | null
   >(null);
@@ -163,6 +166,7 @@ export function ProfilePageContent({ username }: ProfilePageContentProps) {
     const loadProfile = async () => {
       setIsProfileLoading(true);
       setProfileErrorMessage(null);
+      setIsProfileNotFound(false);
 
       try {
         const { profile: loadedProfile } = await getProfile(username);
@@ -174,6 +178,11 @@ export function ProfilePageContent({ username }: ProfilePageContentProps) {
         setProfile(loadedProfile);
       } catch (error) {
         if (!isActive) {
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 404) {
+          setIsProfileNotFound(true);
           return;
         }
 
@@ -241,6 +250,17 @@ export function ProfilePageContent({ username }: ProfilePageContentProps) {
       isActive = false;
     };
   }, [activeTab, currentPage, status, username]);
+
+  if (isProfileNotFound) {
+    return (
+      <RouteStatusScreen
+        eyebrow="Profile"
+        code="404"
+        title="프로필을 찾을 수 없습니다."
+        description="사용자 이름이 바뀌었거나 존재하지 않는 프로필입니다. 게시글 목록에서 작성자를 다시 확인하세요."
+      />
+    );
+  }
 
   return (
     <main className="profile-page">
