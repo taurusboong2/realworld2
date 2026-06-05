@@ -34,14 +34,23 @@ export function ArticleFavoriteButton({
     let isActive = true;
 
     const loadArticleState = async () => {
-      const { article } = await getArticle(slug);
+      try {
+        const { article } = await getArticle(slug);
 
-      if (!isActive) {
-        return;
+        if (!isActive) {
+          return;
+        }
+
+        setFavorited(article.favorited);
+        setFavoritesCount(article.favoritesCount);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setFavorited(initialFavorited);
+        setFavoritesCount(initialFavoritesCount);
       }
-
-      setFavorited(article.favorited);
-      setFavoritesCount(article.favoritesCount);
     };
 
     void loadArticleState();
