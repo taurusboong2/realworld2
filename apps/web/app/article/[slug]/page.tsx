@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+import { ArticleFavoriteButton } from '@/components/article-favorite-button';
+import { ArticleOwnerActions } from '@/components/article-owner-actions';
 import { getArticle } from '@/lib/api/articles';
 import { ApiError } from '@/lib/api/client';
 import type { Article } from '@/lib/api/types';
@@ -40,7 +42,20 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <p className="eyebrow">{article.author.username}</p>
           <h1>{article.title}</h1>
           <p className="article-detail-description">{article.description}</p>
-          <p className="article-detail-date">{formatDate(article.createdAt)}</p>
+          <div className="article-detail-meta-row">
+            <p className="article-detail-date">{formatDate(article.createdAt)}</p>
+            <div className="article-detail-actions">
+              <ArticleFavoriteButton
+                slug={article.slug}
+                initialFavorited={article.favorited}
+                initialFavoritesCount={article.favoritesCount}
+              />
+              <ArticleOwnerActions
+                slug={article.slug}
+                authorUsername={article.author.username}
+              />
+            </div>
+          </div>
         </header>
 
         {article.tagList.length > 0 ? (

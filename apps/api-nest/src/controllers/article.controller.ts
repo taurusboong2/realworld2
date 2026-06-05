@@ -44,8 +44,11 @@ export class ArticleController {
 
   @Get('/feed')
   @UseGuards(AuthGuard)
-  getFeed(@Req() req: AuthenticatedRequest) {
-    return this.articleService.getFeed(req.user.id);
+  getFeed(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: { limit?: string; offset?: string },
+  ) {
+    return this.articleService.getFeed(req.user.id, query);
   }
 
   @Get('/:slug')

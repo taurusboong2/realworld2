@@ -88,7 +88,10 @@ export class ArticleService {
     return parsed;
   }
 
-  async getFeed(userId: number) {
+  async getFeed(
+    userId: number,
+    query: { limit?: string; offset?: string } = {},
+  ) {
     const parsedUserId = this.parseUserId(userId);
     const user = await prisma.user.findUnique({
       where: { id: parsedUserId },
@@ -107,10 +110,14 @@ export class ArticleService {
     const where: Prisma.ArticleWhereInput = {
       authorId: { in: followingIds },
     };
+    const limit = this.parseLimit(query.limit);
+    const offset = this.parseOffset(query.offset);
 
     const [articles, articlesCount] = await Promise.all([
       prisma.article.findMany({
         where,
+        take: limit,
+        skip: offset,
         include: this.articleInclude(parsedUserId),
         orderBy: { createdAt: 'desc' },
       }),

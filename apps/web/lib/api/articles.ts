@@ -9,6 +9,8 @@ export type GetArticlesParams = {
   offset?: number;
 };
 
+export type GetFeedParams = Pick<GetArticlesParams, 'limit' | 'offset'>;
+
 export type CreateArticleInput = {
   title: string;
   description: string;
@@ -50,8 +52,14 @@ export const getArticles = async (
   );
 };
 
-export const getFeed = async (): Promise<ArticleListResponse> => {
-  return requestApi(apiClient.get<ArticleListResponse>('/articles/feed'));
+export const getFeed = async (
+  params: GetFeedParams = {},
+): Promise<ArticleListResponse> => {
+  return requestApi(
+    apiClient.get<ArticleListResponse>(
+      withQuery('/articles/feed', toSearchParams(params)),
+    ),
+  );
 };
 
 export const getArticle = async (slug: string): Promise<ArticleResponse> => {

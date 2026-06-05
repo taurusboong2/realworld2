@@ -1,6 +1,6 @@
 import Link from 'next/link';
+import { ArticleCard } from '@/components/article-card';
 import { getArticles } from '@/lib/api/articles';
-import type { Article } from '@/lib/api/types';
 
 const pageSize = 10;
 
@@ -24,12 +24,6 @@ const parsePage = (value: string | undefined) => {
   return parsed;
 };
 
-const formatDate = (value: string) => {
-  return new Intl.DateTimeFormat('ko-KR', {
-    dateStyle: 'medium',
-  }).format(new Date(value));
-};
-
 const getArticlePageHref = (page: number) => {
   return page === 1 ? '/articles' : `/articles?page=${page}`;
 };
@@ -47,39 +41,6 @@ const getVisiblePages = (currentPage: number, totalPages: number) => {
 
   return Array.from(pages).sort((a, b) => a - b);
 };
-
-function ArticleCard({ article }: { article: Article }) {
-  return (
-    <article className="article-card">
-      <div className="article-card-head">
-        <div className="article-card-main">
-          <p className="eyebrow">{article.author.username}</p>
-          <h2>
-            <Link href={`/article/${encodeURIComponent(article.slug)}`}>
-              {article.title}
-            </Link>
-          </h2>
-          <p>{article.description}</p>
-        </div>
-        <div className="article-favorite-count">
-          <p className="summary-label">Favorites</p>
-          <p>{article.favoritesCount}</p>
-        </div>
-      </div>
-
-      <div className="article-card-meta">
-        <p>{formatDate(article.createdAt)}</p>
-        {article.tagList.length > 0 ? (
-          <ul className="tag-list">
-            {article.tagList.map((tag) => (
-              <li key={tag}>{tag}</li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    </article>
-  );
-}
 
 function Pagination({
   currentPage,
@@ -139,9 +100,14 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
             <h1>게시글 목록</h1>
             <p>최신 게시글을 10개씩 확인합니다.</p>
           </div>
-          <Link href="/article/create" className="article-list-action">
-            New Article
-          </Link>
+          <div className="article-list-actions">
+            <Link href="/article/create" className="article-list-action">
+              New Article
+            </Link>
+            <Link href="/articles/feed" className="article-list-secondary-action">
+              Your Feed
+            </Link>
+          </div>
         </div>
 
         {articles.length > 0 ? (
