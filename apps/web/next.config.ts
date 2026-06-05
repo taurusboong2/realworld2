@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
     '@prisma/adapter-better-sqlite3',
     'better-sqlite3',
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
   async rewrites() {
     const nestApiUrl = process.env.NEST_API_URL ?? 'http://localhost:3001';
 
