@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { ArticleComments } from '@/components/article-comments';
 import { ArticleFavoriteButton } from '@/components/article-favorite-button';
 import { ArticleOwnerActions } from '@/components/article-owner-actions';
 import { getArticle } from '@/lib/api/articles';
@@ -67,6 +68,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         ) : null}
 
         <div className="article-body">{article.body}</div>
+
+        <ArticleComments slug={article.slug} />
       </article>
     </main>
   );
