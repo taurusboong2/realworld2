@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, type ReactNode } from 'react';
+import { getLoginHref } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
 
 type RequireAuthProps = {
@@ -40,7 +41,7 @@ export function RequireAuth({
       return;
     }
 
-    router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+    router.replace(getLoginHref(redirectTo));
   }, [redirectTo, router, status]);
 
   if (status !== 'authenticated') {

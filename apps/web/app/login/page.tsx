@@ -2,29 +2,34 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState, type FormEvent } from 'react';
+import { Suspense, useEffect, useState, type FormEvent } from 'react';
 import { AuthFormShell } from '@/components/auth-form-shell';
 import { getApiErrorMessage } from '@/lib/api/error-message';
+import {
+  getRegisterHref,
+  getSafeRedirectPath,
+} from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
-
-const getSafeRedirectPath = (value: string | null) => {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) {
-    return '/';
-  }
-
-  return value;
-};
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuth();
+  const { login, status } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const redirectTo = getSafeRedirectPath(searchParams.get('redirectTo'));
+  const isAuthReady = status !== 'loading';
+
+  useEffect(() => {
+    if (status !== 'authenticated') {
+      return;
+    }
+
+    router.replace(redirectTo);
+    router.refresh();
+  }, [redirectTo, router, status]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,7 +54,7 @@ function LoginForm() {
       eyebrow="Welcome back"
       title="계정으로 돌아와 글과 피드를 이어서 관리하세요."
       description="RealWorld API와 연결된 세션을 확인하고, 로그인 즉시 헤더와 이후 화면의 인증 상태를 갱신합니다."
-      switchHref="/register"
+      switchHref={getRegisterHref(redirectTo)}
       switchLabel="회원가입"
       switchText="아직 계정이 없나요?"
     >
@@ -86,8 +91,16 @@ function LoginForm() {
           </p>
         ) : null}
 
-        <button type="submit" className="form-submit" disabled={isSubmitting}>
-          {isSubmitting ? '로그인 중' : '로그인'}
+        <button
+          type="submit"
+          className="form-submit"
+          disabled={isSubmitting || !isAuthReady || status === 'authenticated'}
+        >
+          {isSubmitting
+            ? '로그인 중'
+            : status === 'authenticated'
+              ? '이동 중'
+              : '로그인'}
         </button>
 
         <Link href="/" className="auth-return-link">

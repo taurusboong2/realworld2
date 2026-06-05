@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { ApiError } from '@/lib/api/client';
 import { followProfile, unfollowProfile } from '@/lib/api/profiles';
 import { getApiErrorMessage } from '@/lib/api/error-message';
+import { getLoginHref } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
 
 type ProfileFollowButtonProps = {
@@ -15,10 +18,15 @@ export const ProfileFollowButton = ({
   username,
   initialFollowing,
 }: ProfileFollowButtonProps) => {
-  const { status, user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { status, user, refreshUser } = useAuth();
   const [following, setFollowing] = useState(initialFollowing);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryString = searchParams.toString();
+  const redirectTo = queryString ? `${pathname}?${queryString}` : pathname;
 
   if (status === 'authenticated' && user?.username === username) {
     return (
@@ -28,12 +36,18 @@ export const ProfileFollowButton = ({
     );
   }
 
-  if (status !== 'authenticated') {
-    const redirectTo = encodeURIComponent(`/profile/${username}`);
+  if (status === 'loading') {
+    return (
+      <button type="button" className="profile-action-secondary" disabled>
+        Loading
+      </button>
+    );
+  }
 
+  if (status !== 'authenticated') {
     return (
       <Link
-        href={`/login?redirectTo=${redirectTo}`}
+        href={getLoginHref(redirectTo)}
         className="profile-action-primary"
       >
         Login to Follow
@@ -52,6 +66,12 @@ export const ProfileFollowButton = ({
 
       setFollowing(profile.following);
     } catch (followError) {
+      if (followError instanceof ApiError && followError.status === 401) {
+        await refreshUser();
+        router.push(getLoginHref(redirectTo));
+        return;
+      }
+
       setError(getApiErrorMessage(followError));
     } finally {
       setIsPending(false);

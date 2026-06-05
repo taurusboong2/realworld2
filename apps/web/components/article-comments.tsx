@@ -1,14 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import {
   createComment,
   deleteComment,
   getComments,
 } from '@/lib/api/comments';
+import { ApiError } from '@/lib/api/client';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import type { Comment } from '@/lib/api/types';
+import { getLoginHref } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
 
 type ArticleCommentsProps = {
@@ -23,13 +26,18 @@ const formatDate = (value: string) => {
 };
 
 export function ArticleComments({ slug }: ArticleCommentsProps) {
-  const { status, user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { status, user, refreshUser } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [body, setBody] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const queryString = searchParams.toString();
+  const redirectTo = queryString ? `${pathname}?${queryString}` : pathname;
 
   const loadComments = async () => {
     setErrorMessage(null);
@@ -99,6 +107,12 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
       setComments((currentComments) => [comment, ...currentComments]);
       setBody('');
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        await refreshUser();
+        router.push(getLoginHref(redirectTo));
+        return;
+      }
+
       setErrorMessage(getApiErrorMessage(error, '댓글을 작성하지 못했습니다.'));
     } finally {
       setIsSubmitting(false);
@@ -119,6 +133,12 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
         currentComments.filter((comment) => comment.id !== commentId),
       );
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        await refreshUser();
+        router.push(getLoginHref(redirectTo));
+        return;
+      }
+
       setErrorMessage(getApiErrorMessage(error, '댓글을 삭제하지 못했습니다.'));
     } finally {
       setDeletingId(null);
@@ -142,7 +162,12 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
         </button>
       </div>
 
-      {status === 'authenticated' ? (
+      {status === 'loading' ? (
+        <div className="comment-auth-skeleton">
+          <div className="comment-skeleton comment-skeleton-form" />
+          <div className="comment-skeleton comment-skeleton-button" />
+        </div>
+      ) : status === 'authenticated' ? (
         <form className="comment-form" onSubmit={handleSubmit}>
           <label className="form-field" htmlFor="comment">
             <span>Comment</span>
@@ -166,7 +191,7 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
       ) : (
         <p className="comment-login-message">
           댓글을 작성하려면{' '}
-          <Link href={`/login?redirectTo=${encodeURIComponent(`/article/${slug}`)}`}>
+          <Link href={getLoginHref(redirectTo)}>
             로그인
           </Link>
           이 필요합니다.

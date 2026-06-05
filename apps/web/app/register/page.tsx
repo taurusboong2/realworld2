@@ -1,19 +1,33 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState, type FormEvent } from 'react';
 import { AuthFormShell } from '@/components/auth-form-shell';
 import { getApiErrorMessage } from '@/lib/api/error-message';
+import { getLoginHref, getSafeRedirectPath } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
-  const { register } = useAuth();
+  const searchParams = useSearchParams();
+  const { register, status } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const redirectTo = getSafeRedirectPath(searchParams.get('redirectTo'));
+  const loginHref = getLoginHref(redirectTo);
+  const isAuthReady = status !== 'loading';
+
+  useEffect(() => {
+    if (status !== 'authenticated') {
+      return;
+    }
+
+    router.replace(redirectTo);
+    router.refresh();
+  }, [redirectTo, router, status]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -22,7 +36,7 @@ export default function RegisterPage() {
 
     try {
       await register({ username, email, password });
-      router.push('/');
+      router.push(redirectTo);
       router.refresh();
     } catch (error) {
       setErrorMessage(
@@ -38,7 +52,7 @@ export default function RegisterPage() {
       eyebrow="Start writing"
       title="새 계정을 만들고 RealWorld 흐름에 합류하세요."
       description="회원가입 성공 시 백엔드 세션을 그대로 인증 상태에 반영하고, 앱 전역에서 현재 유저를 즉시 사용할 수 있게 합니다."
-      switchHref="/login"
+      switchHref={loginHref}
       switchLabel="로그인"
       switchText="이미 계정이 있나요?"
     >
@@ -89,10 +103,26 @@ export default function RegisterPage() {
           </p>
         ) : null}
 
-        <button type="submit" className="form-submit" disabled={isSubmitting}>
-          {isSubmitting ? '계정 생성 중' : '회원가입'}
+        <button
+          type="submit"
+          className="form-submit"
+          disabled={isSubmitting || !isAuthReady || status === 'authenticated'}
+        >
+          {isSubmitting
+            ? '계정 생성 중'
+            : status === 'authenticated'
+              ? '이동 중'
+              : '회원가입'}
         </button>
       </form>
     </AuthFormShell>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }
