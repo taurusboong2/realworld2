@@ -1633,6 +1633,120 @@ a {
   max-width: 260px;
 }
 
+.profile-articles {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-articles-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-articles-head h2 {
+  margin: 8px 0 0;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.profile-articles-head > p,
+.profile-articles-footer > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profile-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+}
+
+.profile-tab {
+  min-height: 40px;
+  border: 1px solid #cfd8d0;
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 0 14px;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.profile-tab:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.profile-tab.is-active {
+  border-color: var(--foreground);
+  background: var(--foreground);
+  color: #f8faf8;
+  box-shadow: 3px 3px 0 #14b8a6;
+}
+
+.profile-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.profile-articles-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-pager button {
+  min-height: 40px;
+  border: 1px solid #cfd8d0;
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 0 12px;
+}
+
+.profile-pager button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.profile-pager button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.profile-article-skeleton {
+  height: 144px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e4e9e3, #f5f7f4, #e4e9e3);
+  background-size: 220% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
 .profile-skeleton {
   border-radius: 6px;
   background: linear-gradient(90deg, #e4e9e3, #f5f7f4, #e4e9e3);
@@ -1822,6 +1936,20 @@ a {
 
   .profile-copy h1 {
     font-size: 32px;
+  }
+
+  .profile-articles-head,
+  .profile-articles-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-pager {
+    width: 100%;
+  }
+
+  .profile-pager button {
+    flex: 1;
   }
 
   .profile-follow-control {
