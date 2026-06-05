@@ -23,14 +23,31 @@ import type { AuthenticatedRequest } from '../types/auth';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  private setAuthCookie(response: Response, accessToken: string) {
+    response.cookie(env.authCookieName, accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: env.nodeEnv === 'production',
+      maxAge: env.jwtExpiresInSeconds * 1000,
+      path: '/',
+    });
+  }
+
   @Get('/users')
   getUsers() {
     return this.userService.getUsers();
   }
 
   @Post('/users')
-  createUser(@Body() addUserDto: AddUserDto) {
-    return this.userService.createUser(addUserDto);
+  async createUser(
+    @Body() addUserDto: AddUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const { user, accessToken } = await this.userService.createUser(addUserDto);
+
+    this.setAuthCookie(response, accessToken);
+
+    return { user };
   }
 
   @Post('/users/login')
@@ -41,13 +58,7 @@ export class UserController {
   ) {
     const { user, accessToken } = await this.userService.login(loginDto);
 
-    response.cookie(env.authCookieName, accessToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: env.nodeEnv === 'production',
-      maxAge: env.jwtExpiresInSeconds * 1000,
-      path: '/',
-    });
+    this.setAuthCookie(response, accessToken);
 
     return { user };
   }

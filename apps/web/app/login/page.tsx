@@ -68,10 +68,7 @@ function LoginForm() {
         </div>
 
         <div className="form-field">
-          <div className="form-label-row">
-            <label htmlFor="password">Password</label>
-            <Link href="/">Home</Link>
-          </div>
+          <label htmlFor="password">Password</label>
           <input
             id="password"
             name="password"
@@ -92,6 +89,10 @@ function LoginForm() {
         <button type="submit" className="form-submit" disabled={isSubmitting}>
           {isSubmitting ? '로그인 중' : '로그인'}
         </button>
+
+        <Link href="/" className="auth-return-link">
+          홈으로 돌아가기
+        </Link>
       </form>
     </AuthFormShell>
   );

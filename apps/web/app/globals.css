@@ -428,6 +428,19 @@ a {
   text-underline-offset: 4px;
 }
 
+.auth-return-link {
+  justify-self: start;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.auth-return-link:hover {
+  color: var(--accent);
+}
+
 .auth-panel {
   align-self: start;
   border: 1px solid var(--line);
