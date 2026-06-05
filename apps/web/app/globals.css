@@ -734,6 +734,23 @@ a {
   padding: 6px 12px;
 }
 
+.tag-list .tag-list-link-item {
+  padding: 0;
+}
+
+.tag-list-link {
+  display: block;
+  max-width: 100%;
+  color: inherit;
+  overflow-wrap: anywhere;
+  padding: 6px 12px;
+  transition: color 160ms ease;
+}
+
+.tag-list-link:hover {
+  color: var(--accent);
+}
+
 .article-body {
   white-space: pre-wrap;
   border: 1px solid var(--line);
@@ -1004,6 +1021,99 @@ a {
 .article-list {
   display: grid;
   gap: 16px;
+}
+
+.article-list-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 288px;
+  gap: 24px;
+  align-items: start;
+}
+
+.article-list-main {
+  min-width: 0;
+}
+
+.tag-filter {
+  position: sticky;
+  top: 88px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 28px rgb(22 25 23 / 0.06);
+  padding: 20px;
+}
+
+.tag-filter-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tag-filter-head h2 {
+  margin: 8px 0 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.tag-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid #cfd8d0;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 10px;
+}
+
+.tag-filter-clear:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tag-filter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.tag-filter-link {
+  max-width: 100%;
+  border: 1px solid #cfd8d0;
+  border-radius: 999px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  padding: 7px 12px;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.tag-filter-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tag-filter-link.is-active {
+  border-color: var(--foreground);
+  background: var(--foreground);
+  color: #f8faf8;
+}
+
+.tag-filter-empty {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
 }
 
 .article-card {
@@ -1661,6 +1771,14 @@ a {
   .article-comments-refresh,
   .comment-delete {
     width: 100%;
+  }
+
+  .article-list-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tag-filter {
+    position: static;
   }
 
   .article-list-head,

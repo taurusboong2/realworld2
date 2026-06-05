@@ -39,7 +39,14 @@ export function ArticleCard({ article }: ArticleCardProps) {
         {article.tagList.length > 0 ? (
           <ul className="tag-list">
             {article.tagList.map((tag) => (
-              <li key={tag}>{tag}</li>
+              <li key={tag} className="tag-list-link-item">
+                <Link
+                  href={`/articles?tag=${encodeURIComponent(tag)}`}
+                  className="tag-list-link"
+                >
+                  {tag}
+                </Link>
+              </li>
             ))}
           </ul>
         ) : null}
