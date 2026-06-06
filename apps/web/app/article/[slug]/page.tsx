@@ -4,6 +4,7 @@ import { ArticleFavoriteButton } from '@/components/article-favorite-button';
 import { ArticleOwnerActions } from '@/components/article-owner-actions';
 import { getArticle } from '@/lib/api/articles';
 import { ApiError } from '@/lib/api/client';
+import { getServerApiHeaders } from '@/lib/api/server-headers';
 import type { Article } from '@/lib/api/types';
 
 type ArticlePageProps = {
@@ -21,7 +22,9 @@ const formatDate = (value: string) => {
 
 const fetchArticle = async (slug: string): Promise<Article> => {
   try {
-    const { article } = await getArticle(slug);
+    const { article } = await getArticle(slug, {
+      headers: await getServerApiHeaders(),
+    });
     return article;
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {

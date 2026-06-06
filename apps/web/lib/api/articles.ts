@@ -1,6 +1,10 @@
 import { apiClient, requestApi } from './client';
 import type { ArticleListResponse, ArticleResponse } from './types';
 
+type ApiRequestOptions = {
+  headers?: Record<string, string>;
+};
+
 export type GetArticlesParams = {
   tag?: string;
   author?: string;
@@ -44,10 +48,12 @@ const withQuery = (path: string, params: URLSearchParams) => {
 
 export const getArticles = async (
   params: GetArticlesParams = {},
+  options: ApiRequestOptions = {},
 ): Promise<ArticleListResponse> => {
   return requestApi(
     apiClient.get<ArticleListResponse>(
       withQuery('/articles', toSearchParams(params)),
+      options,
     ),
   );
 };
@@ -62,9 +68,15 @@ export const getFeed = async (
   );
 };
 
-export const getArticle = async (slug: string): Promise<ArticleResponse> => {
+export const getArticle = async (
+  slug: string,
+  options: ApiRequestOptions = {},
+): Promise<ArticleResponse> => {
   return requestApi(
-    apiClient.get<ArticleResponse>(`/articles/${encodeURIComponent(slug)}`),
+    apiClient.get<ArticleResponse>(
+      `/articles/${encodeURIComponent(slug)}`,
+      options,
+    ),
   );
 };
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArticleCard } from '@/components/article-card';
 import { getArticles } from '@/lib/api/articles';
+import { getServerApiHeaders } from '@/lib/api/server-headers';
 import { getTags } from '@/lib/api/tags';
 
 const pageSize = 10;
@@ -170,12 +171,16 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
   const currentPage = parsePage(page);
   const selectedTag = normalizeTag(tag);
   const offset = (currentPage - 1) * pageSize;
+  const serverApiHeaders = await getServerApiHeaders();
   const [{ articles, articlesCount }, { tags }] = await Promise.all([
-    getArticles({
-      limit: pageSize,
-      offset,
-      tag: selectedTag,
-    }),
+    getArticles(
+      {
+        limit: pageSize,
+        offset,
+        tag: selectedTag,
+      },
+      { headers: serverApiHeaders },
+    ),
     getTags(),
   ]);
   const totalPages = Math.max(1, Math.ceil(articlesCount / pageSize));

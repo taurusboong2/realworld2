@@ -3,11 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import {
-  favoriteArticle,
-  getArticle,
-  unfavoriteArticle,
-} from '@/lib/api/articles';
+import { favoriteArticle, unfavoriteArticle } from '@/lib/api/articles';
 import { ApiError } from '@/lib/api/client';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import { getLoginHref } from '@/lib/auth/redirect';
@@ -27,7 +23,7 @@ export function ArticleFavoriteButton({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { status, user, refreshUser } = useAuth();
+  const { status, refreshUser } = useAuth();
   const [favorited, setFavorited] = useState(initialFavorited);
   const [favoritesCount, setFavoritesCount] = useState(initialFavoritesCount);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -36,40 +32,9 @@ export function ArticleFavoriteButton({
   const redirectTo = queryString ? `${pathname}?${queryString}` : pathname;
 
   useEffect(() => {
-    if (status !== 'authenticated' || !user) {
-      setFavorited(initialFavorited);
-      setFavoritesCount(initialFavoritesCount);
-      return;
-    }
-
-    let isActive = true;
-
-    const loadArticleState = async () => {
-      try {
-        const { article } = await getArticle(slug);
-
-        if (!isActive) {
-          return;
-        }
-
-        setFavorited(article.favorited);
-        setFavoritesCount(article.favoritesCount);
-      } catch {
-        if (!isActive) {
-          return;
-        }
-
-        setFavorited(initialFavorited);
-        setFavoritesCount(initialFavoritesCount);
-      }
-    };
-
-    void loadArticleState();
-
-    return () => {
-      isActive = false;
-    };
-  }, [initialFavorited, initialFavoritesCount, slug, status, user]);
+    setFavorited(initialFavorited);
+    setFavoritesCount(initialFavoritesCount);
+  }, [initialFavorited, initialFavoritesCount, slug]);
 
   const handleToggle = async () => {
     if (status !== 'authenticated') {
