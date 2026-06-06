@@ -6,6 +6,7 @@ import { AuthFormShell } from '@/components/auth-form-shell';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import { getLoginHref, getSafeRedirectPath } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
+import { usernamePattern, validationLimits } from '@/lib/validation';
 
 function RegisterForm() {
   const router = useRouter();
@@ -32,10 +33,18 @@ function RegisterForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
+
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
     setIsSubmitting(true);
 
     try {
-      await register({ username, email, password });
+      await register({
+        username: trimmedUsername,
+        email: trimmedEmail,
+        password,
+      });
       router.push(redirectTo);
       router.refresh();
     } catch (error) {
@@ -65,6 +74,10 @@ function RegisterForm() {
             type="text"
             autoComplete="username"
             required
+            minLength={validationLimits.usernameMin}
+            maxLength={validationLimits.usernameMax}
+            pattern={usernamePattern}
+            title="영문, 숫자, 밑줄, 하이픈만 사용할 수 있습니다."
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />
@@ -78,6 +91,7 @@ function RegisterForm() {
             type="email"
             autoComplete="email"
             required
+            maxLength={validationLimits.emailMax}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
@@ -91,7 +105,8 @@ function RegisterForm() {
             type="password"
             autoComplete="new-password"
             required
-            minLength={8}
+            minLength={validationLimits.passwordMin}
+            maxLength={validationLimits.passwordMax}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />

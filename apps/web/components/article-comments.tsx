@@ -13,6 +13,7 @@ import { getApiErrorMessage } from '@/lib/api/error-message';
 import type { Comment } from '@/lib/api/types';
 import { getLoginHref } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
+import { validationLimits } from '@/lib/validation';
 
 type ArticleCommentsProps = {
   slug: string;
@@ -176,6 +177,7 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
               name="comment"
               rows={4}
               required
+              maxLength={validationLimits.commentBodyMax}
               value={body}
               onChange={(event) => setBody(event.target.value)}
             />

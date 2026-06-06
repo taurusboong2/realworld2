@@ -4,13 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { createArticle } from '@/lib/api/articles';
 import { getApiErrorMessage } from '@/lib/api/error-message';
-
-const parseTagList = (value: string): string[] => {
-  return value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter((tag, index, tags) => tag !== '' && tags.indexOf(tag) === index);
-};
+import {
+  parseArticleTagList,
+  validateArticleTagList,
+  validationLimits,
+} from '@/lib/validation';
 
 export function ArticleCreateForm() {
   const router = useRouter();
@@ -39,11 +37,19 @@ export function ArticleCreateForm() {
     setIsSubmitting(true);
 
     try {
+      const tagList = parseArticleTagList(tags);
+      const tagErrorMessage = validateArticleTagList(tagList);
+
+      if (tagErrorMessage) {
+        setErrorMessage(tagErrorMessage);
+        return;
+      }
+
       const { article } = await createArticle({
         title: trimmedTitle,
         description: trimmedDescription,
         body: trimmedBody,
-        tagList: parseTagList(tags),
+        tagList,
       });
 
       router.push(`/article/${encodeURIComponent(article.slug)}`);
@@ -66,6 +72,7 @@ export function ArticleCreateForm() {
           name="title"
           type="text"
           required
+          maxLength={validationLimits.articleTitleMax}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
@@ -78,6 +85,7 @@ export function ArticleCreateForm() {
           name="description"
           type="text"
           required
+          maxLength={validationLimits.articleDescriptionMax}
           value={description}
           onChange={(event) => setDescription(event.target.value)}
         />
@@ -90,6 +98,7 @@ export function ArticleCreateForm() {
           name="body"
           required
           rows={10}
+          maxLength={validationLimits.articleBodyMax}
           value={body}
           onChange={(event) => setBody(event.target.value)}
         />
@@ -104,7 +113,12 @@ export function ArticleCreateForm() {
           value={tags}
           onChange={(event) => setTags(event.target.value)}
           placeholder="react, nestjs, realworld"
+          aria-describedby="tags-hint"
         />
+        <p id="tags-hint" className="summary-label">
+          쉼표로 구분하며 최대 {validationLimits.articleTagCountMax}개, 각{' '}
+          {validationLimits.articleTagMax}자 이하입니다.
+        </p>
       </div>
 
       {errorMessage ? (

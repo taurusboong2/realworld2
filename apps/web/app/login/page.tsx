@@ -10,6 +10,7 @@ import {
   getSafeRedirectPath,
 } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
+import { validationLimits } from '@/lib/validation';
 
 function LoginForm() {
   const router = useRouter();
@@ -37,7 +38,7 @@ function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      await login({ email, password });
+      await login({ email: email.trim().toLowerCase(), password });
       router.push(redirectTo);
       router.refresh();
     } catch (error) {
@@ -67,6 +68,7 @@ function LoginForm() {
             type="email"
             autoComplete="email"
             required
+            maxLength={validationLimits.emailMax}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
@@ -80,6 +82,7 @@ function LoginForm() {
             type="password"
             autoComplete="current-password"
             required
+            maxLength={validationLimits.passwordMax}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />

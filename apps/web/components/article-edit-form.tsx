@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react';
 import { updateArticle } from '@/lib/api/articles';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import type { Article } from '@/lib/api/types';
+import { validationLimits } from '@/lib/validation';
 
 type ArticleEditFormProps = {
   article: Article;
@@ -62,6 +63,7 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
           name="title"
           type="text"
           required
+          maxLength={validationLimits.articleTitleMax}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
@@ -74,6 +76,7 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
           name="description"
           type="text"
           required
+          maxLength={validationLimits.articleDescriptionMax}
           value={description}
           onChange={(event) => setDescription(event.target.value)}
         />
@@ -86,6 +89,7 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
           name="body"
           required
           rows={10}
+          maxLength={validationLimits.articleBodyMax}
           value={body}
           onChange={(event) => setBody(event.target.value)}
         />

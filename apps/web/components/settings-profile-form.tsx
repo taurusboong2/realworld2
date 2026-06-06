@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import { useAuth } from '@/lib/auth/use-auth';
+import { usernamePattern, validationLimits } from '@/lib/validation';
 
 export const SettingsProfileForm = () => {
   const router = useRouter();
@@ -25,7 +26,7 @@ export const SettingsProfileForm = () => {
     setSuccess(null);
 
     const nextUsername = username.trim();
-    const nextEmail = email.trim();
+    const nextEmail = email.trim().toLowerCase();
 
     if (!nextUsername || !nextEmail) {
       setError('Username and email are required.');
@@ -62,6 +63,11 @@ export const SettingsProfileForm = () => {
           <input
             type="text"
             autoComplete="username"
+            required
+            minLength={validationLimits.usernameMin}
+            maxLength={validationLimits.usernameMax}
+            pattern={usernamePattern}
+            title="영문, 숫자, 밑줄, 하이픈만 사용할 수 있습니다."
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />
@@ -72,6 +78,8 @@ export const SettingsProfileForm = () => {
           <input
             type="email"
             autoComplete="email"
+            required
+            maxLength={validationLimits.emailMax}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
@@ -83,6 +91,7 @@ export const SettingsProfileForm = () => {
         <input
           type="url"
           placeholder="https://example.com/avatar.png"
+          maxLength={validationLimits.imageMax}
           value={image}
           onChange={(event) => setImage(event.target.value)}
         />
@@ -91,6 +100,8 @@ export const SettingsProfileForm = () => {
       <label className="form-field">
         <span>Bio</span>
         <textarea
+          rows={5}
+          maxLength={validationLimits.bioMax}
           value={bio}
           onChange={(event) => setBio(event.target.value)}
         />
@@ -101,6 +112,8 @@ export const SettingsProfileForm = () => {
         <input
           type="password"
           autoComplete="new-password"
+          minLength={validationLimits.passwordMin}
+          maxLength={validationLimits.passwordMax}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
