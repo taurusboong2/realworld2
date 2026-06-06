@@ -10,13 +10,24 @@ import { ArticleResponseDto } from '../dto/article/article-response.dto';
 import { CreateArticleDto } from '../dto/article/create-article.dto';
 import { UpdateArticleDto } from '../dto/article/update-article.dto';
 
+const DEFAULT_ARTICLE_LIMIT = 20;
+const MAX_ARTICLE_LIMIT = 100;
+
 @Injectable()
 export class ArticleService {
   async getArticles(
-    query: { tag?: string; author?: string; favorited?: string } = {},
+    query: {
+      tag?: string;
+      author?: string;
+      favorited?: string;
+      limit?: string;
+      offset?: string;
+    } = {},
     userId?: number,
   ) {
     const where: Prisma.ArticleWhereInput = {};
+    const limit = this.parseLimit(query.limit);
+    const offset = this.parseOffset(query.offset);
 
     if (query.tag) {
       where.tagList = { some: { name: query.tag } };
@@ -33,6 +44,8 @@ export class ArticleService {
     const [articles, articlesCount] = await Promise.all([
       prisma.article.findMany({
         where,
+        take: limit,
+        skip: offset,
         include: this.articleInclude(userId),
         orderBy: { createdAt: 'desc' },
       }),
@@ -47,7 +60,38 @@ export class ArticleService {
     };
   }
 
-  async getFeed(userId: number) {
+  private parseLimit(value: string | undefined): number {
+    if (!value) {
+      return DEFAULT_ARTICLE_LIMIT;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      return DEFAULT_ARTICLE_LIMIT;
+    }
+
+    return Math.min(parsed, MAX_ARTICLE_LIMIT);
+  }
+
+  private parseOffset(value: string | undefined): number {
+    if (!value) {
+      return 0;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      return 0;
+    }
+
+    return parsed;
+  }
+
+  async getFeed(
+    userId: number,
+    query: { limit?: string; offset?: string } = {},
+  ) {
     const parsedUserId = this.parseUserId(userId);
     const user = await prisma.user.findUnique({
       where: { id: parsedUserId },
@@ -66,10 +110,14 @@ export class ArticleService {
     const where: Prisma.ArticleWhereInput = {
       authorId: { in: followingIds },
     };
+    const limit = this.parseLimit(query.limit);
+    const offset = this.parseOffset(query.offset);
 
     const [articles, articlesCount] = await Promise.all([
       prisma.article.findMany({
         where,
+        take: limit,
+        skip: offset,
         include: this.articleInclude(parsedUserId),
         orderBy: { createdAt: 'desc' },
       }),
@@ -147,7 +195,7 @@ export class ArticleService {
         article: ArticleResponseDto.fromModel(article, parsedUserId),
       };
     } catch (error) {
-      this.handlePrismaError(error);
+      this.handlePrismaError(error, 'Article not found');
     }
   }
 
@@ -169,7 +217,7 @@ export class ArticleService {
         article: ArticleResponseDto.fromModel(article, parsedUserId),
       };
     } catch (error) {
-      this.handlePrismaError(error);
+      this.handlePrismaError(error, 'Article not found');
     }
   }
 
@@ -276,12 +324,15 @@ export class ArticleService {
       .replace(/^-+|-+$/g, '');
   }
 
-  private handlePrismaError(error: unknown): never {
+  private handlePrismaError(
+    error: unknown,
+    notFoundMessage = 'Related resource not found',
+  ): never {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2025'
     ) {
-      throw new NotFoundException('Related resource not found');
+      throw new NotFoundException(notFoundMessage);
     }
 
     throw error;

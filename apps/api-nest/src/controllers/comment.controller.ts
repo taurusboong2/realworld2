@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Post,
   Req,
   UseGuards,
@@ -47,13 +48,9 @@ export class CommentController {
   @UseGuards(AuthGuard)
   deleteComment(
     @Param('slug') slug: string,
-    @Param('id') commentId: string,
+    @Param('id', ParseIntPipe) commentId: number,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.commentService.deleteComment(
-      slug,
-      req.user.id,
-      parseInt(commentId, 10),
-    );
+    return this.commentService.deleteComment(slug, req.user.id, commentId);
   }
 }

@@ -21,7 +21,7 @@ import { UserResponseDto } from '../dto/user/user-response.dto';
 const pbkdf2 = promisify(pbkdf2Callback);
 const passwordHashPrefix = 'pbkdf2_sha256';
 
-type LoginResult = {
+type AuthResult = {
   user: UserResponseDto;
   accessToken: string;
 };
@@ -35,7 +35,7 @@ export class UserService {
     };
   }
 
-  async createUser(addUserDto: AddUserDto) {
+  async createUser(addUserDto: AddUserDto): Promise<AuthResult> {
     const { user: details } = addUserDto;
 
     try {
@@ -49,6 +49,7 @@ export class UserService {
 
       return {
         user: UserResponseDto.fromModel(user),
+        accessToken: this.generateToken(user),
       };
     } catch (error) {
       if (
@@ -62,7 +63,7 @@ export class UserService {
     }
   }
 
-  async login(loginDto: LoginUserDto): Promise<LoginResult> {
+  async login(loginDto: LoginUserDto): Promise<AuthResult> {
     const { user: details } = loginDto;
     const user = await prisma.user.findUnique({
       where: {

@@ -8,9 +8,10 @@ const __dirname = path.dirname(__filename);
 
 const dbPath = path.resolve(__dirname, 'dev.db');
 process.env.DATABASE_URL = `file:${dbPath}`;
+export const sqliteUrl = `file:${dbPath}`;
 
 const adapter = new PrismaBetterSqlite3({
-  url: `file:${dbPath}`,
+  url: sqliteUrl,
 });
 
 export const db = new PrismaClient({ adapter } as any);

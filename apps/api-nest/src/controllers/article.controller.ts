@@ -29,7 +29,14 @@ export class ArticleController {
   @Get('/')
   @UseGuards(OptionalAuthGuard)
   getArticles(
-    @Query() query: { tag?: string; author?: string; favorited?: string },
+    @Query()
+    query: {
+      tag?: string;
+      author?: string;
+      favorited?: string;
+      limit?: string;
+      offset?: string;
+    },
     @Req() req: OptionalAuthenticatedRequest,
   ) {
     return this.articleService.getArticles(query, req.user?.id);
@@ -37,8 +44,11 @@ export class ArticleController {
 
   @Get('/feed')
   @UseGuards(AuthGuard)
-  getFeed(@Req() req: AuthenticatedRequest) {
-    return this.articleService.getFeed(req.user.id);
+  getFeed(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: { limit?: string; offset?: string },
+  ) {
+    return this.articleService.getFeed(req.user.id, query);
   }
 
   @Get('/:slug')
