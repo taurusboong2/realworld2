@@ -195,7 +195,7 @@ export class ArticleService {
         article: ArticleResponseDto.fromModel(article, parsedUserId),
       };
     } catch (error) {
-      this.handlePrismaError(error);
+      this.handlePrismaError(error, 'Article not found');
     }
   }
 
@@ -217,7 +217,7 @@ export class ArticleService {
         article: ArticleResponseDto.fromModel(article, parsedUserId),
       };
     } catch (error) {
-      this.handlePrismaError(error);
+      this.handlePrismaError(error, 'Article not found');
     }
   }
 
@@ -324,12 +324,15 @@ export class ArticleService {
       .replace(/^-+|-+$/g, '');
   }
 
-  private handlePrismaError(error: unknown): never {
+  private handlePrismaError(
+    error: unknown,
+    notFoundMessage = 'Related resource not found',
+  ): never {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2025'
     ) {
-      throw new NotFoundException('Related resource not found');
+      throw new NotFoundException(notFoundMessage);
     }
 
     throw error;

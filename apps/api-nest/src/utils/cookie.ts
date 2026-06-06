@@ -17,5 +17,9 @@ export const extractCookieValue = (
     return undefined;
   }
 
-  return decodeURIComponent(target.slice(cookieName.length + 1));
+  try {
+    return decodeURIComponent(target.slice(cookieName.length + 1));
+  } catch {
+    return undefined;
+  }
 };

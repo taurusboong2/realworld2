@@ -31,3 +31,7 @@ export const env = {
   jwtSecret: getEnv('JWT_SECRET', 'dev-secret-change-me'),
   jwtExpiresInSeconds: parseNumberEnv('JWT_EXPIRES_IN_SECONDS', '604800'),
 } as const;
+
+if (env.nodeEnv === 'production' && env.jwtSecret === 'dev-secret-change-me') {
+  throw new Error('JWT_SECRET must be set in production');
+}
