@@ -16,7 +16,7 @@ export class AddUserDetailsDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
-  @Matches(/^[a-zA-Z0-9_-]+$/)
+  @Matches(/^[\p{L}\p{N}_-]+$/u)
   @MaxLength(30)
   @MinLength(3)
   username: string;

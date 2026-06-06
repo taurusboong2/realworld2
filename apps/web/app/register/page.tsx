@@ -6,7 +6,7 @@ import { AuthFormShell } from '@/components/auth-form-shell';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import { getLoginHref, getSafeRedirectPath } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
-import { usernamePattern, validationLimits } from '@/lib/validation';
+import { validationLimits } from '@/lib/validation';
 
 function RegisterForm() {
   const router = useRouter();
@@ -76,8 +76,7 @@ function RegisterForm() {
             required
             minLength={validationLimits.usernameMin}
             maxLength={validationLimits.usernameMax}
-            pattern={usernamePattern}
-            title="영문, 숫자, 밑줄, 하이픈만 사용할 수 있습니다."
+            title="한글, 영문, 숫자, 밑줄, 하이픈을 사용할 수 있습니다."
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />

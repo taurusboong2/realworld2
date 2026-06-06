@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import { useAuth } from '@/lib/auth/use-auth';
-import { usernamePattern, validationLimits } from '@/lib/validation';
+import { validationLimits } from '@/lib/validation';
 
 export const SettingsProfileForm = () => {
   const router = useRouter();
@@ -66,8 +66,7 @@ export const SettingsProfileForm = () => {
             required
             minLength={validationLimits.usernameMin}
             maxLength={validationLimits.usernameMax}
-            pattern={usernamePattern}
-            title="영문, 숫자, 밑줄, 하이픈만 사용할 수 있습니다."
+            title="한글, 영문, 숫자, 밑줄, 하이픈을 사용할 수 있습니다."
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />

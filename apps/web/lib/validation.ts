@@ -1,5 +1,3 @@
-export const usernamePattern = '[a-zA-Z0-9_-]+';
-
 export const validationLimits = {
   usernameMin: 3,
   usernameMax: 30,
