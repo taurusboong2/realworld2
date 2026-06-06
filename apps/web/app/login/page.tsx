@@ -10,7 +10,12 @@ import {
   getSafeRedirectPath,
 } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
-import { validationLimits } from '@/lib/validation';
+import {
+  validateEmail,
+  validateMaxLength,
+  validateRequiredFields,
+  validationLimits,
+} from '@/lib/validation';
 
 function LoginForm() {
   const router = useRouter();
@@ -35,10 +40,26 @@ function LoginForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const validationMessage =
+      validateRequiredFields([
+        { label: '이메일을', value: trimmedEmail },
+        { label: '비밀번호를', value: password },
+      ]) ??
+      validateEmail(trimmedEmail) ??
+      validateMaxLength('이메일은', trimmedEmail, validationLimits.emailMax) ??
+      validateMaxLength('비밀번호는', password, validationLimits.passwordMax);
+
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await login({ email: email.trim().toLowerCase(), password });
+      await login({ email: trimmedEmail, password });
       router.push(redirectTo);
       router.refresh();
     } catch (error) {
@@ -59,7 +80,7 @@ function LoginForm() {
       switchLabel="회원가입"
       switchText="아직 계정이 없나요?"
     >
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" noValidate onSubmit={handleSubmit}>
         <div className="form-field">
           <label htmlFor="email">Email</label>
           <input

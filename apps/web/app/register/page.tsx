@@ -6,7 +6,14 @@ import { AuthFormShell } from '@/components/auth-form-shell';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import { getLoginHref, getSafeRedirectPath } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
-import { validationLimits } from '@/lib/validation';
+import {
+  validateEmail,
+  validateMaxLength,
+  validateMinLength,
+  validateRequiredFields,
+  validateUsername,
+  validationLimits,
+} from '@/lib/validation';
 
 function RegisterForm() {
   const router = useRouter();
@@ -36,6 +43,32 @@ function RegisterForm() {
 
     const trimmedUsername = username.trim();
     const trimmedEmail = email.trim().toLowerCase();
+    const validationMessage =
+      validateRequiredFields([
+        { label: '사용자 이름을', value: trimmedUsername },
+        { label: '이메일을', value: trimmedEmail },
+        { label: '비밀번호를', value: password },
+      ]) ??
+      validateMinLength(
+        '사용자 이름은',
+        trimmedUsername,
+        validationLimits.usernameMin,
+      ) ??
+      validateMaxLength(
+        '사용자 이름은',
+        trimmedUsername,
+        validationLimits.usernameMax,
+      ) ??
+      validateUsername(trimmedUsername) ??
+      validateEmail(trimmedEmail) ??
+      validateMaxLength('이메일은', trimmedEmail, validationLimits.emailMax) ??
+      validateMinLength('비밀번호는', password, validationLimits.passwordMin) ??
+      validateMaxLength('비밀번호는', password, validationLimits.passwordMax);
+
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -65,7 +98,7 @@ function RegisterForm() {
       switchLabel="로그인"
       switchText="이미 계정이 있나요?"
     >
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" noValidate onSubmit={handleSubmit}>
         <div className="form-field">
           <label htmlFor="username">Username</label>
           <input
@@ -76,7 +109,7 @@ function RegisterForm() {
             required
             minLength={validationLimits.usernameMin}
             maxLength={validationLimits.usernameMax}
-            title="한글, 영문, 숫자, 밑줄, 하이픈을 사용할 수 있습니다."
+            title="사용자 이름은 한글, 영문, 숫자, 밑줄(_), 하이픈(-)만 사용할 수 있습니다."
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />
