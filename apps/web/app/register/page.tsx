@@ -98,51 +98,61 @@ function RegisterForm() {
       switchLabel="로그인"
       switchText="이미 계정이 있나요?"
     >
-      <form className="auth-form" noValidate onSubmit={handleSubmit}>
-        <div className="form-field">
-          <label htmlFor="username">Username</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            autoComplete="username"
-            required
-            minLength={validationLimits.usernameMin}
-            maxLength={validationLimits.usernameMax}
-            title="사용자 이름은 한글, 영문, 숫자, 밑줄(_), 하이픈(-)만 사용할 수 있습니다."
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-        </div>
+      <form
+        className="auth-form"
+        noValidate
+        aria-busy={isSubmitting}
+        onSubmit={handleSubmit}
+      >
+        <fieldset
+          className="auth-fieldset"
+          disabled={isSubmitting || status === 'authenticated'}
+        >
+          <div className="form-field">
+            <label htmlFor="username">Username</label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              autoComplete="username"
+              required
+              minLength={validationLimits.usernameMin}
+              maxLength={validationLimits.usernameMax}
+              title="사용자 이름은 한글, 영문, 숫자, 밑줄(_), 하이픈(-)만 사용할 수 있습니다."
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+            />
+          </div>
 
-        <div className="form-field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            maxLength={validationLimits.emailMax}
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </div>
+          <div className="form-field">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              maxLength={validationLimits.emailMax}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </div>
 
-        <div className="form-field">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={validationLimits.passwordMin}
-            maxLength={validationLimits.passwordMax}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
+          <div className="form-field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={validationLimits.passwordMin}
+              maxLength={validationLimits.passwordMax}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </div>
+        </fieldset>
 
         {errorMessage ? (
           <p role="alert" className="form-error">

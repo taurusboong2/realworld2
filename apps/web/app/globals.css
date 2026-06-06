@@ -455,6 +455,24 @@ a {
   gap: 20px;
 }
 
+.auth-fieldset {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.auth-fieldset:disabled {
+  opacity: 0.7;
+}
+
+.auth-fieldset:disabled input {
+  background: #eef3f0;
+  cursor: wait;
+}
+
 .form-field label,
 .form-label-row label {
   color: var(--foreground);
