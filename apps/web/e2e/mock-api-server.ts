@@ -1,4 +1,8 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
 
 type MockUser = {
   id: number;
@@ -11,10 +15,31 @@ type MockUser = {
 
 type PublicUser = Omit<MockUser, 'password'>;
 
+type MockProfile = {
+  username: string;
+  bio: string | null;
+  image: string | null;
+  following: boolean;
+};
+
+type MockArticle = {
+  slug: string;
+  title: string;
+  description: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  tagList: string[];
+  favorited: boolean;
+  favoritesCount: number;
+  author: MockProfile;
+};
+
 const port = Number(process.env.PLAYWRIGHT_MOCK_API_PORT ?? 3101);
 const authCookieName = 'realworld_auth_token';
 const users = new Map<string, MockUser>();
 const sessions = new Map<string, string>();
+const articles = new Map<string, MockArticle>();
 
 const toPublicUser = ({ password: _password, ...user }: MockUser): PublicUser => {
   return user;
@@ -82,6 +107,40 @@ const createSession = (email: string) => {
   sessions.set(token, email);
 
   return token;
+};
+
+const toSlug = (value: string) => {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+};
+
+const toProfile = (user: MockUser | undefined): MockProfile => {
+  return {
+    username: user?.username ?? 'mock_author',
+    bio: user?.bio ?? null,
+    image: user?.image ?? null,
+    following: false,
+  };
+};
+
+const getSeedArticle = (request: IncomingMessage): MockArticle => {
+  const user = getCurrentUser(request);
+
+  return {
+    slug: 'mock-e2e-article',
+    title: 'Mock E2E Article',
+    description: 'A stable article returned by the Playwright mock API.',
+    body: 'This article is served by the mock API server.',
+    createdAt: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+    tagList: ['e2e', 'mock'],
+    favorited: false,
+    favoritesCount: 0,
+    author: toProfile(user),
+  };
 };
 
 const handleRegister = async (
@@ -165,31 +224,81 @@ const handleArticles = (
   request: IncomingMessage,
   response: ServerResponse,
 ) => {
-  const user = getCurrentUser(request);
-  const author = {
-    username: user?.username ?? 'mock_author',
-    bio: null,
-    image: null,
-    following: false,
-  };
+  const currentArticles = [getSeedArticle(request), ...articles.values()];
 
   sendJson(response, 200, {
-    articles: [
-      {
-        slug: 'mock-e2e-article',
-        title: 'Mock E2E Article',
-        description: 'A stable article returned by the Playwright mock API.',
-        body: 'This article is served by the mock API server.',
-        createdAt: new Date('2026-01-01T00:00:00.000Z').toISOString(),
-        updatedAt: new Date('2026-01-01T00:00:00.000Z').toISOString(),
-        tagList: ['e2e', 'mock'],
-        favorited: false,
-        favoritesCount: 0,
-        author,
-      },
-    ],
-    articlesCount: 1,
+    articles: currentArticles,
+    articlesCount: currentArticles.length,
   });
+};
+
+const handleCreateArticle = async (
+  request: IncomingMessage,
+  response: ServerResponse,
+) => {
+  const user = getCurrentUser(request);
+
+  if (!user) {
+    sendJson(response, 401, { errors: { body: ['unauthorized'] } });
+    return;
+  }
+
+  const body = await readJsonBody<{
+    article?: {
+      title?: string;
+      description?: string;
+      body?: string;
+      tagList?: string[];
+    };
+  }>(request);
+  const details = body.article;
+
+  if (!details?.title || !details.description || !details.body) {
+    sendJson(response, 422, { errors: { body: ['article is invalid'] } });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const baseSlug = toSlug(details.title) || `article-${articles.size + 1}`;
+  const slug = articles.has(baseSlug)
+    ? `${baseSlug}-${articles.size + 1}`
+    : baseSlug;
+  const article: MockArticle = {
+    slug,
+    title: details.title,
+    description: details.description,
+    body: details.body,
+    createdAt: now,
+    updatedAt: now,
+    tagList: details.tagList ?? [],
+    favorited: false,
+    favoritesCount: 0,
+    author: toProfile(user),
+  };
+  articles.set(slug, article);
+
+  sendJson(response, 201, { article });
+};
+
+const handleArticleBySlug = (
+  request: IncomingMessage,
+  response: ServerResponse,
+  slug: string,
+) => {
+  const article =
+    articles.get(slug) ??
+    (slug === 'mock-e2e-article' ? getSeedArticle(request) : undefined);
+
+  if (!article) {
+    sendJson(response, 404, { errors: { body: ['article not found'] } });
+    return;
+  }
+
+  sendJson(response, 200, { article });
+};
+
+const handleComments = (_request: IncomingMessage, response: ServerResponse) => {
+  sendJson(response, 200, { comments: [] });
 };
 
 const handleTags = (_request: IncomingMessage, response: ServerResponse) => {
@@ -228,6 +337,31 @@ const server = createServer((request, response) => {
 
     if (route === 'GET /api/articles') {
       handleArticles(request, response);
+      return;
+    }
+
+    if (route === 'POST /api/articles') {
+      void handleCreateArticle(request, response);
+      return;
+    }
+
+    const articleMatch = url.pathname.match(/^\/api\/articles\/([^/]+)$/);
+
+    if (request.method === 'GET' && articleMatch) {
+      handleArticleBySlug(
+        request,
+        response,
+        decodeURIComponent(articleMatch[1]),
+      );
+      return;
+    }
+
+    const commentsMatch = url.pathname.match(
+      /^\/api\/articles\/([^/]+)\/comments$/,
+    );
+
+    if (request.method === 'GET' && commentsMatch) {
+      handleComments(request, response);
       return;
     }
 
