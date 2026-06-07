@@ -5,6 +5,11 @@ import { useState, type FormEvent } from 'react';
 import { updateArticle } from '@/lib/api/articles';
 import { getApiErrorMessage } from '@/lib/api/error-message';
 import type { Article } from '@/lib/api/types';
+import {
+  validateMaxLength,
+  validateRequiredFields,
+  validationLimits,
+} from '@/lib/validation';
 
 type ArticleEditFormProps = {
   article: Article;
@@ -17,8 +22,6 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
   const [body, setBody] = useState(article.body);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const canSubmit =
-    title.trim() !== '' && description.trim() !== '' && body.trim() !== '';
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -27,9 +30,22 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
     const trimmedTitle = title.trim();
     const trimmedDescription = description.trim();
     const trimmedBody = body.trim();
+    const validationMessage =
+      validateRequiredFields([
+        { label: '제목을', value: trimmedTitle },
+        { label: '요약을', value: trimmedDescription },
+        { label: '본문을', value: trimmedBody },
+      ]) ??
+      validateMaxLength('제목은', trimmedTitle, validationLimits.articleTitleMax) ??
+      validateMaxLength(
+        '요약은',
+        trimmedDescription,
+        validationLimits.articleDescriptionMax,
+      ) ??
+      validateMaxLength('본문은', trimmedBody, validationLimits.articleBodyMax);
 
-    if (!trimmedTitle || !trimmedDescription || !trimmedBody) {
-      setErrorMessage('제목, 설명, 본문을 모두 입력해주세요.');
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
       return;
     }
 
@@ -54,7 +70,11 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
   };
 
   return (
-    <form className="protected-panel article-form" onSubmit={handleSubmit}>
+    <form
+      className="protected-panel article-form"
+      noValidate
+      onSubmit={handleSubmit}
+    >
       <div className="form-field">
         <label htmlFor="title">Title</label>
         <input
@@ -62,6 +82,7 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
           name="title"
           type="text"
           required
+          maxLength={validationLimits.articleTitleMax}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
@@ -74,6 +95,7 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
           name="description"
           type="text"
           required
+          maxLength={validationLimits.articleDescriptionMax}
           value={description}
           onChange={(event) => setDescription(event.target.value)}
         />
@@ -86,6 +108,7 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
           name="body"
           required
           rows={10}
+          maxLength={validationLimits.articleBodyMax}
           value={body}
           onChange={(event) => setBody(event.target.value)}
         />
@@ -100,7 +123,7 @@ export function ArticleEditForm({ article }: ArticleEditFormProps) {
       <button
         type="submit"
         className="form-submit form-submit-inline"
-        disabled={isSubmitting || !canSubmit}
+        disabled={isSubmitting}
       >
         {isSubmitting ? 'Saving' : 'Save Article'}
       </button>

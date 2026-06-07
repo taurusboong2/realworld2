@@ -4,13 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { createArticle } from '@/lib/api/articles';
 import { getApiErrorMessage } from '@/lib/api/error-message';
-
-const parseTagList = (value: string): string[] => {
-  return value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter((tag, index, tags) => tag !== '' && tags.indexOf(tag) === index);
-};
+import {
+  parseArticleTagList,
+  validateMaxLength,
+  validateRequiredFields,
+  validateArticleTagList,
+  validationLimits,
+} from '@/lib/validation';
 
 export function ArticleCreateForm() {
   const router = useRouter();
@@ -20,8 +20,6 @@ export function ArticleCreateForm() {
   const [tags, setTags] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const canSubmit =
-    title.trim() !== '' && description.trim() !== '' && body.trim() !== '';
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -30,20 +28,41 @@ export function ArticleCreateForm() {
     const trimmedTitle = title.trim();
     const trimmedDescription = description.trim();
     const trimmedBody = body.trim();
+    const validationMessage =
+      validateRequiredFields([
+        { label: '제목을', value: trimmedTitle },
+        { label: '요약을', value: trimmedDescription },
+        { label: '본문을', value: trimmedBody },
+      ]) ??
+      validateMaxLength('제목은', trimmedTitle, validationLimits.articleTitleMax) ??
+      validateMaxLength(
+        '요약은',
+        trimmedDescription,
+        validationLimits.articleDescriptionMax,
+      ) ??
+      validateMaxLength('본문은', trimmedBody, validationLimits.articleBodyMax);
 
-    if (!trimmedTitle || !trimmedDescription || !trimmedBody) {
-      setErrorMessage('제목, 설명, 본문을 모두 입력해주세요.');
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
       return;
     }
 
     setIsSubmitting(true);
 
     try {
+      const tagList = parseArticleTagList(tags);
+      const tagErrorMessage = validateArticleTagList(tagList);
+
+      if (tagErrorMessage) {
+        setErrorMessage(tagErrorMessage);
+        return;
+      }
+
       const { article } = await createArticle({
         title: trimmedTitle,
         description: trimmedDescription,
         body: trimmedBody,
-        tagList: parseTagList(tags),
+        tagList,
       });
 
       router.push(`/article/${encodeURIComponent(article.slug)}`);
@@ -58,7 +77,11 @@ export function ArticleCreateForm() {
   };
 
   return (
-    <form className="protected-panel article-form" onSubmit={handleSubmit}>
+    <form
+      className="protected-panel article-form"
+      noValidate
+      onSubmit={handleSubmit}
+    >
       <div className="form-field">
         <label htmlFor="title">Title</label>
         <input
@@ -66,6 +89,7 @@ export function ArticleCreateForm() {
           name="title"
           type="text"
           required
+          maxLength={validationLimits.articleTitleMax}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
@@ -78,6 +102,7 @@ export function ArticleCreateForm() {
           name="description"
           type="text"
           required
+          maxLength={validationLimits.articleDescriptionMax}
           value={description}
           onChange={(event) => setDescription(event.target.value)}
         />
@@ -90,6 +115,7 @@ export function ArticleCreateForm() {
           name="body"
           required
           rows={10}
+          maxLength={validationLimits.articleBodyMax}
           value={body}
           onChange={(event) => setBody(event.target.value)}
         />
@@ -104,7 +130,12 @@ export function ArticleCreateForm() {
           value={tags}
           onChange={(event) => setTags(event.target.value)}
           placeholder="react, nestjs, realworld"
+          aria-describedby="tags-hint"
         />
+        <p id="tags-hint" className="summary-label">
+          쉼표로 구분하며 최대 {validationLimits.articleTagCountMax}개, 각{' '}
+          {validationLimits.articleTagMax}자 이하입니다.
+        </p>
       </div>
 
       {errorMessage ? (
@@ -116,7 +147,7 @@ export function ArticleCreateForm() {
       <button
         type="submit"
         className="form-submit form-submit-inline"
-        disabled={isSubmitting || !canSubmit}
+        disabled={isSubmitting}
       >
         {isSubmitting ? 'Publishing' : 'Publish Article'}
       </button>

@@ -13,6 +13,11 @@ import { getApiErrorMessage } from '@/lib/api/error-message';
 import type { Comment } from '@/lib/api/types';
 import { getLoginHref } from '@/lib/auth/redirect';
 import { useAuth } from '@/lib/auth/use-auth';
+import {
+  validateMaxLength,
+  validateRequiredFields,
+  validationLimits,
+} from '@/lib/validation';
 
 type ArticleCommentsProps = {
   slug: string;
@@ -94,9 +99,12 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
     setErrorMessage(null);
 
     const trimmedBody = body.trim();
+    const validationMessage =
+      validateRequiredFields([{ label: '댓글 내용을', value: trimmedBody }]) ??
+      validateMaxLength('댓글은', trimmedBody, validationLimits.commentBodyMax);
 
-    if (!trimmedBody) {
-      setErrorMessage('댓글 내용을 입력해주세요.');
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
       return;
     }
 
@@ -168,7 +176,7 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
           <div className="comment-skeleton comment-skeleton-button" />
         </div>
       ) : status === 'authenticated' ? (
-        <form className="comment-form" onSubmit={handleSubmit}>
+        <form className="comment-form" noValidate onSubmit={handleSubmit}>
           <label className="form-field" htmlFor="comment">
             <span>Comment</span>
             <textarea
@@ -176,6 +184,7 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
               name="comment"
               rows={4}
               required
+              maxLength={validationLimits.commentBodyMax}
               value={body}
               onChange={(event) => setBody(event.target.value)}
             />
@@ -183,7 +192,7 @@ export function ArticleComments({ slug }: ArticleCommentsProps) {
           <button
             type="submit"
             className="form-submit form-submit-inline"
-            disabled={isSubmitting || body.trim() === ''}
+            disabled={isSubmitting}
           >
             {isSubmitting ? 'Posting...' : 'Post Comment'}
           </button>

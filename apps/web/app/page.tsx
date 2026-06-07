@@ -1,116 +1,138 @@
-import { getNestStatus, type ServiceStatus } from '@/lib/backend';
-import { getDatabaseSummary } from '@/lib/database-summary';
+import Link from 'next/link';
+import { ArticleCard } from '@/components/article-card';
+import { getArticles } from '@/lib/api/articles';
+import { getServerApiHeaders } from '@/lib/api/server-headers';
+import { getTags } from '@/lib/api/tags';
+import type { Article } from '@/lib/api/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type SummaryItem = {
-  label: string;
-  value: string;
+const homeFeedLimit = 6;
+
+const getUniqueAuthorCount = (articles: Article[]) => {
+  return new Set(articles.map((article) => article.author.username)).size;
 };
 
-function StatusPill({ status }: { status: ServiceStatus['status'] }) {
-  const className =
-    status === 'ready' ? 'status status-ready' : 'status status-offline';
-
-  return <span className={className}>{status}</span>;
-}
-
-function ServiceCard({ service }: { service: ServiceStatus }) {
-  return (
-    <article className="card">
-      <div className="card-head">
-        <div>
-          <p className="card-kicker">{service.kind}</p>
-          <h2>{service.name}</h2>
-        </div>
-        <StatusPill status={service.status} />
-      </div>
-      <p className="card-detail">{service.detail}</p>
-      <code className="endpoint">{service.endpoint}</code>
-    </article>
-  );
-}
+const getFeaturedTags = (tags: string[]) => {
+  return [...tags].sort((a, b) => a.localeCompare(b)).slice(0, 18);
+};
 
 export default async function Home() {
-  const nestStatus = await getNestStatus();
-  const database = await getDatabaseSummary();
-
-  const services: ServiceStatus[] = [
-    nestStatus,
-    {
-      name: 'Prisma + SQLite',
-      kind: 'Shared database package',
-      status: 'ready',
-      detail:
-        'Next.js can read the same SQLite database through @repo/database.',
-      endpoint: '/api/db/summary',
-    },
-  ];
-
-  const summary: SummaryItem[] = [
-    { label: 'Nest', value: 'apps/api-nest, port 3001' },
-    { label: 'Prisma', value: '@repo/database' },
-    { label: 'SQLite', value: database.sqliteUrl },
-    { label: 'Proxy', value: '/api/nest/:path* -> NEST_API_URL/api/:path*' },
-  ];
+  const serverApiHeaders = await getServerApiHeaders();
+  const [{ articles, articlesCount }, { tags }] = await Promise.all([
+    getArticles(
+      {
+        limit: homeFeedLimit,
+        offset: 0,
+      },
+      { headers: serverApiHeaders },
+    ),
+    getTags(),
+  ]);
+  const featuredTags = getFeaturedTags(tags);
+  const uniqueAuthorCount = getUniqueAuthorCount(articles);
 
   return (
     <main className="page">
       <section className="shell">
         <div className="hero">
           <div>
-            <p className="eyebrow">RealWorld2</p>
-            <h1>Nest, Prisma, SQLite 상태를 한 화면에서 확인합니다</h1>
+            <p className="eyebrow">Global feed</p>
+            <h1>RealWorld 최신 게시글을 바로 확인하세요</h1>
             <p>
-              Next.js 대시보드가 Nest API 상태를 확인하고 공유
-              Prisma/SQLite 패키지에서 현재 데이터 수를 직접 읽습니다.
+              Nest API에서 가져온 게시글, 태그, 요약 지표를 한 화면에 모아
+              보여줍니다. 관심 있는 태그를 고르거나 전체 피드로 이동해 더 많은
+              글을 탐색할 수 있습니다.
             </p>
           </div>
-          <aside className="runtime" aria-label="Frontend runtime">
-            <p className="runtime-label">Frontend</p>
-            <p className="runtime-value">Next.js 16</p>
+          <div className="home-actions" aria-label="Primary actions">
+            <Link href="/article/create" className="article-list-action">
+              New Article
+            </Link>
+            <Link href="/articles" className="article-list-secondary-action">
+              View All
+            </Link>
+          </div>
+        </div>
+
+        <section className="home-stats" aria-label="Summary statistics">
+          <article className="home-stat">
+            <p className="metric-label">Articles</p>
+            <p className="home-stat-value">{articlesCount}</p>
+          </article>
+          <article className="home-stat">
+            <p className="metric-label">Tags</p>
+            <p className="home-stat-value">{tags.length}</p>
+          </article>
+          <article className="home-stat">
+            <p className="metric-label">Authors in latest feed</p>
+            <p className="home-stat-value">{uniqueAuthorCount}</p>
+          </article>
+        </section>
+
+        <div className="home-layout">
+          <section className="home-feed" aria-labelledby="home-feed-title">
+            <div className="home-section-head">
+              <div>
+                <p className="eyebrow">Latest</p>
+                <h2 id="home-feed-title">최근 게시글</h2>
+              </div>
+              <Link href="/articles" className="home-section-link">
+                전체 보기
+              </Link>
+            </div>
+
+            {articles.length > 0 ? (
+              <div className="article-list">
+                {articles.map((article) => (
+                  <ArticleCard key={article.slug} article={article} />
+                ))}
+              </div>
+            ) : (
+              <div className="article-empty">
+                <p>아직 게시글이 없습니다.</p>
+                <p>첫 게시글을 작성하면 홈 피드에 표시됩니다.</p>
+              </div>
+            )}
+          </section>
+
+          <aside className="home-sidebar" aria-labelledby="home-tags-title">
+            <div className="tag-filter">
+              <div className="tag-filter-head">
+                <div>
+                  <p className="eyebrow">Tags</p>
+                  <h2 id="home-tags-title">인기 태그</h2>
+                </div>
+              </div>
+
+              {featuredTags.length > 0 ? (
+                <div className="tag-filter-list">
+                  {featuredTags.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={`/articles?tag=${encodeURIComponent(tag)}`}
+                      className="tag-filter-link"
+                    >
+                      {tag}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="tag-filter-empty">아직 등록된 태그가 없습니다.</p>
+              )}
+            </div>
+
+            <section className="summary-panel">
+              <p className="card-kicker">Overview</p>
+              <h2>피드 요약</h2>
+              <p className="summary-copy">
+                홈에서는 최신 {homeFeedLimit}개 게시글을 먼저 보여주고, 전체
+                목록에서는 태그 필터와 페이지네이션으로 게시글을 탐색합니다.
+              </p>
+            </section>
           </aside>
         </div>
-
-        <div className="services">
-          {services.map((service) => (
-            <ServiceCard key={service.name} service={service} />
-          ))}
-        </div>
-
-        <section className="content-grid">
-          <div className="summary-panel">
-            <p className="card-kicker">Integration</p>
-            <h2>프로젝트 연결 요약</h2>
-            <p className="summary-copy">
-              `apps/api-nest`는 RealWorld API 도메인을 제공하고,
-              `apps/web`은 Nest API 프록시와 데이터베이스 요약 API를 통해
-              백엔드와 공유 DB 상태를 확인합니다.
-            </p>
-            <div className="summary-grid">
-              {summary.map((item) => (
-                <div className="summary-item" key={item.label}>
-                  <p className="summary-label">{item.label}</p>
-                  <p className="summary-value">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="metrics-panel">
-            <p className="card-kicker">SQLite data</p>
-            <h2>현재 DB 레코드 수</h2>
-            <div className="metrics-grid">
-              {Object.entries(database.counts).map(([name, count]) => (
-                <div className="metric" key={name}>
-                  <p className="metric-label">{name}</p>
-                  <p className="metric-value">{count}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
       </section>
     </main>
   );
