@@ -224,11 +224,47 @@ const handleArticles = (
   request: IncomingMessage,
   response: ServerResponse,
 ) => {
+  const url = new URL(request.url ?? '/', `http://localhost:${port}`);
+  const tag = url.searchParams.get('tag');
+  const limit = Number(url.searchParams.get('limit') ?? 20);
+  const offset = Number(url.searchParams.get('offset') ?? 0);
   const currentArticles = [getSeedArticle(request), ...articles.values()];
+  const filteredArticles = tag
+    ? currentArticles.filter((article) => article.tagList.includes(tag))
+    : currentArticles;
+  const paginatedArticles = filteredArticles.slice(
+    Number.isInteger(offset) && offset > 0 ? offset : 0,
+    Number.isInteger(limit) && limit > 0 ? offset + limit : undefined,
+  );
 
   sendJson(response, 200, {
-    articles: currentArticles,
-    articlesCount: currentArticles.length,
+    articles: paginatedArticles,
+    articlesCount: filteredArticles.length,
+  });
+};
+
+const handleFeed = (request: IncomingMessage, response: ServerResponse) => {
+  const user = getCurrentUser(request);
+
+  if (!user) {
+    sendJson(response, 401, { errors: { body: ['unauthorized'] } });
+    return;
+  }
+
+  const url = new URL(request.url ?? '/', `http://localhost:${port}`);
+  const limit = Number(url.searchParams.get('limit') ?? 20);
+  const offset = Number(url.searchParams.get('offset') ?? 0);
+  const userArticles = Array.from(articles.values()).filter(
+    (article) => article.author.username === user.username,
+  );
+  const paginatedArticles = userArticles.slice(
+    Number.isInteger(offset) && offset > 0 ? offset : 0,
+    Number.isInteger(limit) && limit > 0 ? offset + limit : undefined,
+  );
+
+  sendJson(response, 200, {
+    articles: paginatedArticles,
+    articlesCount: userArticles.length,
   });
 };
 
@@ -297,12 +333,92 @@ const handleArticleBySlug = (
   sendJson(response, 200, { article });
 };
 
+const handleUpdateArticle = async (
+  request: IncomingMessage,
+  response: ServerResponse,
+  slug: string,
+) => {
+  const user = getCurrentUser(request);
+  const article = articles.get(slug);
+
+  if (!user) {
+    sendJson(response, 401, { errors: { body: ['unauthorized'] } });
+    return;
+  }
+
+  if (!article) {
+    sendJson(response, 404, { errors: { body: ['article not found'] } });
+    return;
+  }
+
+  if (article.author.username !== user.username) {
+    sendJson(response, 403, { errors: { body: ['forbidden'] } });
+    return;
+  }
+
+  const body = await readJsonBody<{
+    article?: {
+      title?: string;
+      description?: string;
+      body?: string;
+    };
+  }>(request);
+  const details = body.article ?? {};
+  const nextTitle = details.title ?? article.title;
+  const nextSlug = details.title ? toSlug(details.title) || slug : slug;
+  const updatedArticle: MockArticle = {
+    ...article,
+    slug: nextSlug,
+    title: nextTitle,
+    description: details.description ?? article.description,
+    body: details.body ?? article.body,
+    updatedAt: new Date().toISOString(),
+  };
+
+  articles.delete(slug);
+  articles.set(nextSlug, updatedArticle);
+  sendJson(response, 200, { article: updatedArticle });
+};
+
+const handleDeleteArticle = (
+  request: IncomingMessage,
+  response: ServerResponse,
+  slug: string,
+) => {
+  const user = getCurrentUser(request);
+  const article = articles.get(slug);
+
+  if (!user) {
+    sendJson(response, 401, { errors: { body: ['unauthorized'] } });
+    return;
+  }
+
+  if (!article) {
+    sendJson(response, 404, { errors: { body: ['article not found'] } });
+    return;
+  }
+
+  if (article.author.username !== user.username) {
+    sendJson(response, 403, { errors: { body: ['forbidden'] } });
+    return;
+  }
+
+  articles.delete(slug);
+  response.writeHead(204);
+  response.end();
+};
+
 const handleComments = (_request: IncomingMessage, response: ServerResponse) => {
   sendJson(response, 200, { comments: [] });
 };
 
 const handleTags = (_request: IncomingMessage, response: ServerResponse) => {
-  sendJson(response, 200, { tags: ['e2e', 'mock'] });
+  const dynamicTags = Array.from(articles.values()).flatMap(
+    (article) => article.tagList,
+  );
+  const tags = Array.from(new Set(['e2e', 'mock', ...dynamicTags]));
+
+  sendJson(response, 200, { tags });
 };
 
 const server = createServer((request, response) => {
@@ -340,6 +456,11 @@ const server = createServer((request, response) => {
       return;
     }
 
+    if (route === 'GET /api/articles/feed') {
+      handleFeed(request, response);
+      return;
+    }
+
     if (route === 'POST /api/articles') {
       void handleCreateArticle(request, response);
       return;
@@ -349,6 +470,24 @@ const server = createServer((request, response) => {
 
     if (request.method === 'GET' && articleMatch) {
       handleArticleBySlug(
+        request,
+        response,
+        decodeURIComponent(articleMatch[1]),
+      );
+      return;
+    }
+
+    if (request.method === 'PUT' && articleMatch) {
+      void handleUpdateArticle(
+        request,
+        response,
+        decodeURIComponent(articleMatch[1]),
+      );
+      return;
+    }
+
+    if (request.method === 'DELETE' && articleMatch) {
+      handleDeleteArticle(
         request,
         response,
         decodeURIComponent(articleMatch[1]),
