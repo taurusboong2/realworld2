@@ -1,33 +1,13 @@
-import { expect, test, type Page } from '@playwright/test';
-
-const createTestUser = () => {
-  const id = Date.now().toString(36);
-
-  return {
-    username: `article_${id}`,
-    email: `article_${id}@example.com`,
-    password: 'Password123!',
-  };
-};
-
-const signUp = async (page: Page) => {
-  const user = createTestUser();
-
-  await page.goto('/register');
-  await page.getByLabel('Username').fill(user.username);
-  await page.getByLabel('Email').fill(user.email);
-  await page.getByLabel('Password').fill(user.password);
-  await page.getByRole('button', { name: '회원가입' }).click();
-  await expect(page).toHaveURL('/');
-
-  return user;
-};
+import { expect, test } from '@playwright/test';
+import { expectProtectedRouteRedirect } from './utils/auth';
+import { toSlug } from './utils/strings';
+import { signUp } from './utils/users';
 
 test.describe('article flow', () => {
   test('creates an article and opens its detail page', async ({ page }) => {
-    const user = await signUp(page);
+    const user = await signUp(page, 'article');
     const title = `Playwright Article ${Date.now().toString(36)}`;
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const slug = toSlug(title);
 
     await page.goto('/article/create');
     await expect(
@@ -69,14 +49,7 @@ test.describe('article flow', () => {
     const protectedRoutes = ['/article/create', '/settings'];
 
     for (const protectedRoute of protectedRoutes) {
-      await page.goto(protectedRoute);
-
-      await expect(page).toHaveURL(
-        `/login?redirectTo=${encodeURIComponent(protectedRoute)}`,
-      );
-      await expect(
-        page.getByRole('heading', { name: /계정으로 돌아와/ }),
-      ).toBeVisible();
+      await expectProtectedRouteRedirect(page, protectedRoute);
     }
   });
 });

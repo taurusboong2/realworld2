@@ -1,14 +1,6 @@
 import { expect, test } from '@playwright/test';
-
-const createTestUser = () => {
-  const id = Date.now().toString(36);
-
-  return {
-    username: `e2e_${id}`,
-    email: `e2e_${id}@example.com`,
-    password: 'Password123!',
-  };
-};
+import { expectProtectedRouteRedirect } from './utils/auth';
+import { createTestUser } from './utils/users';
 
 test.describe('auth flow', () => {
   test('registers, logs out, and logs back in', async ({ page }) => {
@@ -42,11 +34,6 @@ test.describe('auth flow', () => {
   test('redirects unauthenticated users from protected pages to login', async ({
     page,
   }) => {
-    await page.goto('/article/create');
-
-    await expect(page).toHaveURL(/\/login\?redirectTo=%2Farticle%2Fcreate$/);
-    await expect(
-      page.getByRole('heading', { name: /계정으로 돌아와/ }),
-    ).toBeVisible();
+    await expectProtectedRouteRedirect(page, '/article/create');
   });
 });

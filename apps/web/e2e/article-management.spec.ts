@@ -1,54 +1,8 @@
-import { expect, test, type Page } from '@playwright/test';
-
-const createTestUser = (prefix: string) => {
-  const id = Date.now().toString(36);
-
-  return {
-    username: `${prefix}_${id}`,
-    email: `${prefix}_${id}@example.com`,
-    password: 'Password123!',
-  };
-};
-
-const toSlug = (value: string) => {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-};
-
-const signUp = async (page: Page, prefix: string) => {
-  const user = createTestUser(prefix);
-
-  await page.goto('/register');
-  await page.getByLabel('Username').fill(user.username);
-  await page.getByLabel('Email').fill(user.email);
-  await page.getByLabel('Password').fill(user.password);
-  await page.getByRole('button', { name: '회원가입' }).click();
-  await expect(page).toHaveURL('/');
-
-  return user;
-};
-
-const createArticle = async (
-  page: Page,
-  {
-    title,
-    description,
-    body,
-    tags,
-  }: {
-    title: string;
-    description: string;
-    body: string;
-    tags: string;
-  },
-) => {
-  await page.goto('/article/create');
-  await page.getByLabel('Title').fill(title);
-  await page.getByLabel('Description').fill(description);
-  await page.getByLabel('Body').fill(body);
-  await page.getByLabel('Tags').fill(tags);
-  await page.getByRole('button', { name: 'Publish Article' }).click();
-  await expect(page).toHaveURL(`/article/${toSlug(title)}`);
-};
+import { expect, test } from '@playwright/test';
+import { createArticle } from './utils/articles';
+import { waitForFeedToSettle } from './utils/feed';
+import { toSlug, uniqueId } from './utils/strings';
+import { signUp } from './utils/users';
 
 test.describe('article management', () => {
   test('updates and deletes an owned article', async ({ page }) => {
@@ -92,9 +46,9 @@ test.describe('article management', () => {
     page,
   }) => {
     await signUp(page, 'feed');
-    const id = Date.now().toString(36);
+    const id = uniqueId();
     const title = `Feed Navigation Article ${id}`;
-    const tag = `navtag${id}`;
+    const tag = `navtag${id.replace(/-/g, '')}`;
 
     await createArticle(page, {
       title,
@@ -113,7 +67,9 @@ test.describe('article management', () => {
     await expect(page.getByText(`"${tag}" 태그의 게시글`)).toBeVisible();
     await expect(page.getByRole('link', { name: title })).toBeVisible();
 
-    await page.getByRole('link', { name: 'Your Feed' }).click();
+    await waitForFeedToSettle(page, async () => {
+      await page.getByRole('link', { name: 'Your Feed' }).click();
+    });
     await expect(page).toHaveURL('/articles/feed');
     await expect(
       page.getByRole('heading', { name: '팔로잉 피드' }),

@@ -11,9 +11,10 @@ type MockUser = {
   bio: string | null;
   image: string | null;
   password: string;
+  following: Set<string>;
 };
 
-type PublicUser = Omit<MockUser, 'password'>;
+type PublicUser = Omit<MockUser, 'password' | 'following'>;
 
 type MockProfile = {
   username: string;
@@ -41,7 +42,11 @@ const users = new Map<string, MockUser>();
 const sessions = new Map<string, string>();
 const articles = new Map<string, MockArticle>();
 
-const toPublicUser = ({ password: _password, ...user }: MockUser): PublicUser => {
+const toPublicUser = ({
+  password: _password,
+  following: _following,
+  ...user
+}: MockUser): PublicUser => {
   return user;
 };
 
@@ -92,6 +97,10 @@ const getCurrentUser = (request: IncomingMessage) => {
   return email ? users.get(email) : undefined;
 };
 
+const findUserByUsername = (username: string) => {
+  return Array.from(users.values()).find((user) => user.username === username);
+};
+
 const createAuthCookie = (token: string) => {
   return `${authCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax`;
 };
@@ -117,12 +126,16 @@ const toSlug = (value: string) => {
     .replace(/^-|-$/g, '');
 };
 
-const toProfile = (user: MockUser | undefined): MockProfile => {
+const toProfile = (
+  user: MockUser | undefined,
+  currentUser?: MockUser,
+): MockProfile => {
   return {
     username: user?.username ?? 'mock_author',
     bio: user?.bio ?? null,
     image: user?.image ?? null,
-    following: false,
+    following:
+      user && currentUser ? currentUser.following.has(user.username) : false,
   };
 };
 
@@ -171,6 +184,7 @@ const handleRegister = async (
     password: details.password,
     bio: null,
     image: null,
+    following: new Set(),
   };
   users.set(email, user);
 
@@ -214,6 +228,67 @@ const handleCurrentUser = (
   sendJson(response, 200, { user: toPublicUser(user) });
 };
 
+const handleUpdateCurrentUser = async (
+  request: IncomingMessage,
+  response: ServerResponse,
+) => {
+  const user = getCurrentUser(request);
+
+  if (!user) {
+    sendJson(response, 401, { errors: { body: ['unauthorized'] } });
+    return;
+  }
+
+  const body = await readJsonBody<{
+    user?: {
+      username?: string;
+      email?: string;
+      password?: string;
+      bio?: string;
+      image?: string;
+    };
+  }>(request);
+  const details = body.user ?? {};
+  const nextEmail = details.email?.toLowerCase() ?? user.email;
+  const usernameOwner = details.username
+    ? findUserByUsername(details.username)
+    : undefined;
+  const emailOwner = users.get(nextEmail);
+
+  if (usernameOwner && usernameOwner.id !== user.id) {
+    sendJson(response, 409, { errors: { body: ['username already exists'] } });
+    return;
+  }
+
+  if (emailOwner && emailOwner.id !== user.id) {
+    sendJson(response, 409, { errors: { body: ['email already exists'] } });
+    return;
+  }
+
+  const previousEmail = user.email;
+
+  if (nextEmail !== previousEmail) {
+    users.delete(user.email);
+  }
+
+  user.username = details.username ?? user.username;
+  user.email = nextEmail;
+  user.password = details.password ?? user.password;
+  user.bio = details.bio ?? user.bio;
+  user.image = details.image ?? user.image;
+  users.set(user.email, user);
+
+  if (nextEmail !== previousEmail) {
+    for (const [token, email] of sessions) {
+      if (email === previousEmail) {
+        sessions.set(token, nextEmail);
+      }
+    }
+  }
+
+  sendJson(response, 200, { user: toPublicUser(user) });
+};
+
 const handleLogout = (_request: IncomingMessage, response: ServerResponse) => {
   sendJson(response, 200, { ok: true }, {
     'Set-Cookie': clearAuthCookie(),
@@ -226,12 +301,16 @@ const handleArticles = (
 ) => {
   const url = new URL(request.url ?? '/', `http://localhost:${port}`);
   const tag = url.searchParams.get('tag');
+  const author = url.searchParams.get('author');
   const limit = Number(url.searchParams.get('limit') ?? 20);
   const offset = Number(url.searchParams.get('offset') ?? 0);
   const currentArticles = [getSeedArticle(request), ...articles.values()];
-  const filteredArticles = tag
-    ? currentArticles.filter((article) => article.tagList.includes(tag))
-    : currentArticles;
+  const filteredArticles = currentArticles.filter((article) => {
+    return (
+      (!tag || article.tagList.includes(tag)) &&
+      (!author || article.author.username === author)
+    );
+  });
   const paginatedArticles = filteredArticles.slice(
     Number.isInteger(offset) && offset > 0 ? offset : 0,
     Number.isInteger(limit) && limit > 0 ? offset + limit : undefined,
@@ -421,6 +500,67 @@ const handleTags = (_request: IncomingMessage, response: ServerResponse) => {
   sendJson(response, 200, { tags });
 };
 
+const handleProfile = (
+  request: IncomingMessage,
+  response: ServerResponse,
+  username: string,
+) => {
+  const user = findUserByUsername(username);
+
+  if (!user) {
+    sendJson(response, 404, { errors: { body: ['profile not found'] } });
+    return;
+  }
+
+  sendJson(response, 200, {
+    profile: toProfile(user, getCurrentUser(request)),
+  });
+};
+
+const handleFollowProfile = (
+  request: IncomingMessage,
+  response: ServerResponse,
+  username: string,
+) => {
+  const currentUser = getCurrentUser(request);
+  const userToFollow = findUserByUsername(username);
+
+  if (!currentUser) {
+    sendJson(response, 401, { errors: { body: ['unauthorized'] } });
+    return;
+  }
+
+  if (!userToFollow) {
+    sendJson(response, 404, { errors: { body: ['profile not found'] } });
+    return;
+  }
+
+  currentUser.following.add(userToFollow.username);
+  sendJson(response, 200, { profile: toProfile(userToFollow, currentUser) });
+};
+
+const handleUnfollowProfile = (
+  request: IncomingMessage,
+  response: ServerResponse,
+  username: string,
+) => {
+  const currentUser = getCurrentUser(request);
+  const userToUnfollow = findUserByUsername(username);
+
+  if (!currentUser) {
+    sendJson(response, 401, { errors: { body: ['unauthorized'] } });
+    return;
+  }
+
+  if (!userToUnfollow) {
+    sendJson(response, 404, { errors: { body: ['profile not found'] } });
+    return;
+  }
+
+  currentUser.following.delete(userToUnfollow.username);
+  sendJson(response, 200, { profile: toProfile(userToUnfollow, currentUser) });
+};
+
 const server = createServer((request, response) => {
   const url = new URL(request.url ?? '/', `http://localhost:${port}`);
   const route = `${request.method ?? 'GET'} ${url.pathname}`;
@@ -443,6 +583,11 @@ const server = createServer((request, response) => {
 
     if (route === 'GET /api/user') {
       handleCurrentUser(request, response);
+      return;
+    }
+
+    if (route === 'PUT /api/user') {
+      void handleUpdateCurrentUser(request, response);
       return;
     }
 
@@ -506,6 +651,35 @@ const server = createServer((request, response) => {
 
     if (route === 'GET /api/tags') {
       handleTags(request, response);
+      return;
+    }
+
+    const profileMatch = url.pathname.match(/^\/api\/profiles\/([^/]+)$/);
+
+    if (request.method === 'GET' && profileMatch) {
+      handleProfile(request, response, decodeURIComponent(profileMatch[1]));
+      return;
+    }
+
+    const profileFollowMatch = url.pathname.match(
+      /^\/api\/profiles\/([^/]+)\/follow$/,
+    );
+
+    if (request.method === 'POST' && profileFollowMatch) {
+      handleFollowProfile(
+        request,
+        response,
+        decodeURIComponent(profileFollowMatch[1]),
+      );
+      return;
+    }
+
+    if (request.method === 'DELETE' && profileFollowMatch) {
+      handleUnfollowProfile(
+        request,
+        response,
+        decodeURIComponent(profileFollowMatch[1]),
+      );
       return;
     }
 
