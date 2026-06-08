@@ -78,8 +78,6 @@ function RegisterForm() {
         email: trimmedEmail,
         password,
       });
-      router.push(redirectTo);
-      router.refresh();
     } catch (error) {
       setErrorMessage(
         getApiErrorMessage(error, '회원가입 정보를 다시 확인해주세요.'),

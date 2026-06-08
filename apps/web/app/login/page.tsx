@@ -60,8 +60,6 @@ function LoginForm() {
 
     try {
       await login({ email: trimmedEmail, password });
-      router.push(redirectTo);
-      router.refresh();
     } catch (error) {
       setErrorMessage(
         getApiErrorMessage(error, '이메일 또는 비밀번호를 확인해주세요.'),

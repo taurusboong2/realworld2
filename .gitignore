@@ -10,5 +10,9 @@ dist
 *.tsbuildinfo
 /generated
 **/generated
+test-results
+**/test-results
+playwright-report
+**/playwright-report
 .DS_Store
 *.patch

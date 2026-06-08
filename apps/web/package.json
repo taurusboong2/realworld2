@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:e2e": "playwright test -c ../../playwright.config.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

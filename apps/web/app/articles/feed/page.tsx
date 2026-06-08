@@ -77,24 +77,30 @@ function ArticleFeed() {
           </p>
         ) : null}
 
-        {isLoading ? (
-          <div className="article-list">
-            {Array.from({ length: 3 }, (_, index) => (
-              <div key={index} className="feed-skeleton" />
-            ))}
-          </div>
-        ) : articles.length > 0 ? (
-          <div className="article-list">
-            {articles.map((article) => (
-              <ArticleCard key={article.slug} article={article} />
-            ))}
-          </div>
-        ) : (
-          <div className="article-empty">
-            <p>피드에 표시할 게시글이 없습니다.</p>
-            <p>프로필 팔로우 기능이 연결되면 이 피드가 채워집니다.</p>
-          </div>
-        )}
+        <section
+          aria-label="Personal feed articles"
+          aria-busy={isLoading}
+          aria-live="polite"
+        >
+          {isLoading ? (
+            <div className="article-list">
+              {Array.from({ length: 3 }, (_, index) => (
+                <div key={index} className="feed-skeleton" />
+              ))}
+            </div>
+          ) : articles.length > 0 ? (
+            <div className="article-list">
+              {articles.map((article) => (
+                <ArticleCard key={article.slug} article={article} />
+              ))}
+            </div>
+          ) : (
+            <div className="article-empty">
+              <p>피드에 표시할 게시글이 없습니다.</p>
+              <p>프로필 팔로우 기능이 연결되면 이 피드가 채워집니다.</p>
+            </div>
+          )}
+        </section>
 
         <div className="article-list-footer">
           <p>총 {articlesCount}개</p>

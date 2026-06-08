@@ -9,6 +9,7 @@
         "web:dev": "turbo run dev --filter=@repo/web",
         "build": "turbo run build",
         "lint": "turbo run lint",
+        "test:e2e": "playwright test",
         "test": "echo \"Error: no test specified\" && exit 1",
         "p:generate": "corepack pnpm --filter @repo/database exec prisma generate",
         "p:migrate": "corepack pnpm --filter @repo/database exec prisma migrate dev",
@@ -23,6 +24,7 @@
     "license": "ISC",
     "packageManager": "pnpm@10.32.1",
     "devDependencies": {
+        "@playwright/test": "^1.60.0",
         "tsx": "^4.21.0",
         "turbo": "^2.9.3"
     }

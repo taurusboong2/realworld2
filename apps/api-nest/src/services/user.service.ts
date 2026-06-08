@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -71,7 +72,10 @@ export class UserService {
       },
     });
 
-    if (!user || !(await this.verifyPassword(details.password, user.password))) {
+    if (
+      !user ||
+      !(await this.verifyPassword(details.password, user.password))
+    ) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -82,8 +86,9 @@ export class UserService {
   }
 
   async getCurrentUser(id: number) {
+    const parsedId = this.parseUserId(id);
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: { id: parsedId },
     });
 
     if (!user) {
@@ -96,11 +101,12 @@ export class UserService {
   }
 
   async updateUser(id: number, updateDto: UpdateUserDto) {
+    const parsedId = this.parseUserId(id);
     const { user: details } = updateDto;
 
     try {
       const user = await prisma.user.update({
-        where: { id },
+        where: { id: parsedId },
         data: {
           username: details.username,
           email: details.email,
@@ -183,5 +189,13 @@ export class UserService {
 
   private base64UrlEncode(value: Record<string, unknown>): string {
     return Buffer.from(JSON.stringify(value)).toString('base64url');
+  }
+
+  private parseUserId(id: number) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new BadRequestException('user id is required');
+    }
+
+    return id;
   }
 }
