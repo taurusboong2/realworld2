@@ -1,14 +1,23 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { prisma } from '../clients/prisma.client';
 import { ProfileResponseDto } from '../dto/profile/profile-response.dto';
 
 @Injectable()
 export class ProfileService {
   async getProfile(username: string, currentUserId?: number) {
+    const parsedCurrentUserId = currentUserId
+      ? this.parseCurrentUserId(currentUserId)
+      : undefined;
     const user = await prisma.user.findUnique({
       where: { username },
       include: {
-        followedBy: currentUserId ? { where: { id: currentUserId } } : false,
+        followedBy: parsedCurrentUserId
+          ? { where: { id: parsedCurrentUserId } }
+          : false,
       },
     });
 
@@ -19,12 +28,13 @@ export class ProfileService {
     return {
       profile: ProfileResponseDto.fromModel(
         user,
-        currentUserId ? user.followedBy.length > 0 : false,
+        parsedCurrentUserId ? user.followedBy.length > 0 : false,
       ),
     };
   }
 
   async followUser(username: string, currentUserId: number) {
+    const parsedCurrentUserId = this.parseCurrentUserId(currentUserId);
     const userToFollow = await prisma.user.findUnique({
       where: { username },
     });
@@ -34,7 +44,7 @@ export class ProfileService {
     }
 
     await prisma.user.update({
-      where: { id: currentUserId },
+      where: { id: parsedCurrentUserId },
       data: {
         following: {
           connect: { id: userToFollow.id },
@@ -48,6 +58,7 @@ export class ProfileService {
   }
 
   async unfollowUser(username: string, currentUserId: number) {
+    const parsedCurrentUserId = this.parseCurrentUserId(currentUserId);
     const userToUnfollow = await prisma.user.findUnique({
       where: { username },
     });
@@ -57,7 +68,7 @@ export class ProfileService {
     }
 
     await prisma.user.update({
-      where: { id: currentUserId },
+      where: { id: parsedCurrentUserId },
       data: {
         following: {
           disconnect: { id: userToUnfollow.id },
@@ -68,5 +79,13 @@ export class ProfileService {
     return {
       profile: ProfileResponseDto.fromModel(userToUnfollow, false),
     };
+  }
+
+  private parseCurrentUserId(currentUserId: number) {
+    if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+      throw new BadRequestException('current user id is required');
+    }
+
+    return currentUserId;
   }
 }
